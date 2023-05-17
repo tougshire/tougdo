@@ -12,31 +12,34 @@ def refresh(txtarea):
     f.close()
     items = data.split('\n')
     parsed_items=[]
-    itempattern = '^\([A-Za-z]\)\s.*'
+    itempattern = '^\s*\([A-Z]\)\s.*'
     duepattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow)'
-    pripattern = '^\([A-Za-z]\)'
+    pripattern = '^\s*\([A-Z]\)'
     projpattern = '\+\w*'
     
     for item in items:
-        if re.match(itempattern, item):
+        if re.match(itempattern, item, flags=re.I):
             item_text = item
+            print('tp235ha00', item_text)
             parsed_item = {}
             parsed_item['pri'] = ''
-            primatch=re.search(pripattern, item_text)
+            primatch=re.search(pripattern, item_text, flags=re.I)
             if primatch:
-                parsed_item['pri'] = primatch[0].upper()
-                item_text = re.sub(pripattern, '', item_text)
+                parsed_item['pri'] = primatch[0].upper().strip()
+                item_text = re.sub(pripattern, '', item_text, flags=re.I)
 
             parsed_item['due'] = ''
-            duematch=re.search(duepattern, item_text)
+            duematch=re.search(duepattern, item_text, flags=re.I)
             if duematch:
                 duedate = duematch[0]
-                if duedate == 'due:today':
+                if duedate.lower() == 'due:today':
                     duedate = 'due:' + date.today().isoformat()
-                if duedate == 'due:tomorrow':
+                if duedate.lower() == 'due:tomorrow':
                     duedate = 'due:' + (date.today() + timedelta(days=1)).isoformat()
                 parsed_item['due'] = duedate
-                item_text = re.sub(duepattern, '', item_text)
+                print('tp235h956', item_text)
+                item_text = re.sub(duepattern, '', item_text, flags=re.I)
+                print('tp235h957', item_text)
 
 
             parsed_item['projs'] = []
