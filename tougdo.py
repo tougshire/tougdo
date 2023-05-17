@@ -1,11 +1,9 @@
 from datetime import date, timedelta
 import tkinter as tk
 import re
-window = tk.Tk()
-window.title('Tougshore To Do List')
 
 
-def refresh(txtarea):
+def refresh(textarea):
 
     f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "r")
     data = f.read()
@@ -20,7 +18,6 @@ def refresh(txtarea):
     for item in items:
         if re.match(itempattern, item, flags=re.I):
             item_text = item
-            print('tp235ha00', item_text)
             parsed_item = {}
             parsed_item['pri'] = ''
             primatch=re.search(pripattern, item_text, flags=re.I)
@@ -37,9 +34,7 @@ def refresh(txtarea):
                 if duedate.lower() == 'due:tomorrow':
                     duedate = 'due:' + (date.today() + timedelta(days=1)).isoformat()
                 parsed_item['due'] = duedate
-                print('tp235h956', item_text)
                 item_text = re.sub(duepattern, '', item_text, flags=re.I)
-                print('tp235h957', item_text)
 
 
             parsed_item['projs'] = []
@@ -72,15 +67,15 @@ def refresh(txtarea):
 
         data = data + '\n' 
 
-    txtarea.delete("1.0", "end")
-    txtarea.insert('1.0',data)
+    textarea.delete("1.0", "end")
+    textarea.insert('1.0',data)
 
-def save(txtarea):
+def save(textarea):
 
     f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "w")
     itempattern = '^\([A-Z]\)\s.*'
 
-    data = txtarea.get(1.0, tk.END)
+    data = textarea.get(1.0, tk.END)
     items = data.split('\n')
     data = ''
     for i, item in enumerate(items):
@@ -89,19 +84,53 @@ def save(txtarea):
     f.write(data)
     f.close()
 
-    refresh(txtarea)
+    refresh(textarea)
+
+def search(textarea, searchbox):
+    pos = textarea.index(tk.INSERT)
+    if not pos > "":
+        pos = "1.0"
+    print('tp236hc28', pos)
+    textarea.tag_config('found', background='yellow')
+    searchstring = searchbox.get()
+    pos = textarea.search(searchstring, pos, stopindex=tk.END )
+    if pos == "":
+        pos = textarea.search(searchstring, "1.0", stopindex=tk.END )
+
+    if pos:
+        textarea.tag_add('found', pos, '%s+%dc' % (pos, len(searchstring)))
+        textarea.focus_set()
+        textarea.mark_set(tk.INSERT, pos)
+
 
 items = []
-txtarea = tk.Text(window, width=400)
-txtarea.pack(pady=20, expand='yes')
 
+
+root = tk.Tk()
+root.title('Tougshore To Do List')
 font=('Calibri 35')
 
-refresh_btn=tk.Button(window,height=1,width=10, text="Refresh",command=lambda: refresh(txtarea))
-refresh_btn.pack()
-save_btn=tk.Button(window,height=1,width=10, text="Save",command=lambda: save(txtarea))
-save_btn.pack()
+top = tk.Frame(root)
+top.pack()
 
-refresh(txtarea)
+bottom = tk.Frame(root)
+bottom.pack()
 
-window.mainloop()
+textarea = tk.Text(top, width=400)
+textarea.pack(pady=20, expand='yes')
+
+searchbutton = tk.Button(bottom, height=1, text="Search", command=lambda: search(textarea, searchbox))
+searchbutton.pack(side="right")
+searchbox = tk.Entry(bottom)
+searchbox.pack(side="right")
+searchboxlabel = tk.Label(bottom,text="Search")
+searchboxlabel.pack(side="right")
+
+refresh_btn=tk.Button(bottom,height=1,width=10, text="Refresh",command=lambda: refresh(textarea))
+refresh_btn.pack(side="right")
+save_btn=tk.Button(bottom,height=1,width=10, text="Save",command=lambda: save(textarea))
+save_btn.pack(side="right")
+
+refresh(textarea)
+
+root.mainloop()
