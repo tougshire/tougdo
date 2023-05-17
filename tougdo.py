@@ -90,7 +90,6 @@ def search(textarea, searchbox):
     pos = textarea.index(tk.INSERT)
     if not pos > "":
         pos = "1.0"
-    print('tp236hc28', pos)
     textarea.tag_config('found', background='yellow')
     searchstring = searchbox.get()
     pos = textarea.search(searchstring, pos, stopindex=tk.END )
@@ -119,8 +118,6 @@ bottom.pack()
 textarea = tk.Text(top, width=400)
 textarea.pack(pady=20, expand='yes')
 
-searchbutton = tk.Button(bottom, height=1, text="Search", command=lambda: search(textarea, searchbox))
-searchbutton.pack(side="right")
 searchbox = tk.Entry(bottom)
 searchbox.pack(side="right")
 searchboxlabel = tk.Label(bottom,text="Search")
@@ -130,6 +127,11 @@ refresh_btn=tk.Button(bottom,height=1,width=10, text="Refresh",command=lambda: r
 refresh_btn.pack(side="right")
 save_btn=tk.Button(bottom,height=1,width=10, text="Save",command=lambda: save(textarea))
 save_btn.pack(side="right")
+
+root.bind('<Control-f>', lambda x: searchbox.focus_set())
+root.bind('<Control-s>', lambda x: save(textarea))
+root.bind('<Control-r>', lambda x: refresh(textarea))
+searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 
 refresh(textarea)
 
