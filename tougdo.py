@@ -51,6 +51,15 @@ def refresh(textarea):
                     duedate = 'due:' + date.today().isoformat()
                 if duedate.lower() == 'due:tomorrow':
                     duedate = 'due:' + (date.today() + timedelta(days=1)).isoformat()
+                weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                due_weekday_names = ['due:' + weekday_name for weekday_name in weekday_names]
+                if duedate.lower() in due_weekday_names:
+                    due_weekday_number = due_weekday_names.index(duedate.lower())
+                    for d in range(1,8):
+                        nextday = date.today() + timedelta(days = d)                     
+                        if nextday.weekday() == due_weekday_number:
+                            duedate = 'due:' + nextday.isoformat()
+
                 parsed_item['due'] = duedate
                 item_text = re.sub(duepattern, '', item_text, flags=re.I)
 
