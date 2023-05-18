@@ -2,6 +2,23 @@ from datetime import date, timedelta
 import tkinter as tk
 import re
 
+def delete():
+    current_pos = textarea.index(tk.INSERT)
+    split_pos = current_pos.split('.')
+    line_start = '{}.{}'.format(split_pos[0], '0')
+    line_end = '{}.{}'.format(split_pos[0], tk.END)
+    textarea.focus_set()
+    textarea.mark_set(tk.INSERT, current_pos)
+    get_text = textarea.get(line_start, line_end)
+    editbox.insert(0, get_text)
+    textarea.delete(line_start, line_end)
+    editbox.focus_set()
+
+def add():
+
+    textarea.insert("1.0", editbox.get() + "\n")
+    editbox.delete(0, tk.END)
+    save()
 
 def refresh(textarea):
 
@@ -11,7 +28,7 @@ def refresh(textarea):
     items = data.split('\n')
     parsed_items=[]
     itempattern = '^\s*\([A-Z]\)\s.*'
-    duepattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow)'
+    duepattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow|monday)'
     pripattern = '^\s*\([A-Z]\)'
     projpattern = '\+\w*'
     
@@ -70,7 +87,7 @@ def refresh(textarea):
     textarea.delete("1.0", "end")
     textarea.insert('1.0',data)
 
-def save(textarea):
+def save():
 
     f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "w")
     itempattern = '^\([A-Z]\)\s.*'
@@ -109,29 +126,40 @@ root = tk.Tk()
 root.title('Tougshore To Do List')
 font=('Calibri 35')
 
-top = tk.Frame(root)
-top.pack()
+textframe = tk.Frame(root)
+textframe.pack()
+buttonframe = tk.Frame(root)
+buttonframe.pack()
+searchframe = tk.Frame(root)
+searchframe.pack()
+entryframe = tk.Frame(root)
+entryframe.pack()
 
-bottom = tk.Frame(root)
-bottom.pack()
-
-textarea = tk.Text(top, width=400)
+textarea = tk.Text(textframe, width=400)
 textarea.pack(pady=20, expand='yes')
 
-searchbox = tk.Entry(bottom)
+searchbox = tk.Entry(searchframe)
 searchbox.pack(side="right")
-searchboxlabel = tk.Label(bottom,text="Search")
+searchboxlabel = tk.Label(searchframe,text="Search")
 searchboxlabel.pack(side="right")
 
-refresh_btn=tk.Button(bottom,height=1,width=10, text="Refresh",command=lambda: refresh(textarea))
+editbox = tk.Entry(entryframe, width=100)
+editbox.pack(side="right")
+editboxlabel = tk.Label(entryframe,text="add")
+editboxlabel.pack(side="left")
+
+refresh_btn=tk.Button(buttonframe,height=1,width=10, text="Refresh",command=lambda: refresh(textarea))
 refresh_btn.pack(side="right")
-save_btn=tk.Button(bottom,height=1,width=10, text="Save",command=lambda: save(textarea))
+save_btn=tk.Button(buttonframe,height=1,width=10, text="Save",command=lambda: save())
 save_btn.pack(side="right")
 
+root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
-root.bind('<Control-s>', lambda x: save(textarea))
+root.bind('<Control-s>', lambda x: save())
 root.bind('<Control-r>', lambda x: refresh(textarea))
+root.bind('<Control-x>', lambda x: delete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
+editbox.bind('<Return>', lambda x: add())
 
 refresh(textarea)
 
