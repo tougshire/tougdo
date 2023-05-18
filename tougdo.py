@@ -25,7 +25,6 @@ def refresh(textarea):
     f.close()
     items = data.split('\n')
     parsed_items=[]
-    itempattern = '^\s*\([A-Z]\)\s.*'
     duepattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow|monday)'
     pripattern = '^\s*\([A-Z]\)'
     projpattern = '\+\w*'
@@ -88,13 +87,12 @@ def refresh(textarea):
 def save():
 
     f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "w")
-    itempattern = '^\([A-Z]\)\s.*'
 
     data = textarea.get(1.0, tk.END)
     items = data.split('\n')
     data = ''
     for i, item in enumerate(items):
-        if re.match(itempattern, item):
+        if re.match(itempattern, item, re.I):
             data = data + item + '\n'
     f.write(data)
     f.close()
@@ -124,6 +122,7 @@ root = tk.Tk()
 root.title('Tougshore To Do List')
 font=('Calibri 35')
 
+# Set up frames
 textframe = tk.Frame(root)
 textframe.pack()
 buttonframe = tk.Frame(root)
@@ -133,6 +132,7 @@ searchframe.pack()
 entryframe = tk.Frame(root)
 entryframe.pack()
 
+# Set up widgets
 textarea = tk.Text(textframe, width=400)
 textarea.pack(pady=20, expand='yes')
 
@@ -151,6 +151,7 @@ refresh_btn.pack(side="right")
 save_btn=tk.Button(buttonframe,height=1,width=10, text="Save",command=lambda: save())
 save_btn.pack(side="right")
 
+# Bind shortcuts
 root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
 root.bind('<Control-s>', lambda x: save())
@@ -158,6 +159,9 @@ root.bind('<Control-r>', lambda x: refresh(textarea))
 root.bind('<Control-x>', lambda x: delete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 editbox.bind('<Return>', lambda x: add())
+
+# utilities
+itempattern = '^\([A-Z]\)\s+.+'
 
 refresh(textarea)
 
