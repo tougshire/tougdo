@@ -17,21 +17,43 @@ def parse_completion(item_text):
     return['', item_text]
 
 
+
 def parse_pri(item_text):
 
-    pattern = '^\s*(?:x*\s+)*(\([A-Z]\))'
-    print('tp235ic20', item_text)
+    pattern = '^\s*(?:x*\s+)*(\(([A-Z])\))'
 
     rematch=re.search(pattern, item_text, flags=re.I)
-    print('tp235ic21')
 
     if rematch:
-        print('tp235ic22')
         pri = rematch[1].upper().strip()
-        item_text = re.sub(pattern, '', item_text, flags=re.I)
+        
+        item_text = re.sub('\\(' + rematch[2] + '\\)', '', item_text, flags=re.I)
+
         return[pri, item_text]
 
     return['', item_text]
+
+def parse_creation(item_text):
+
+    rematch=''
+    # match how it would be displayed in this app
+    app_pattern = 'created:(\d\d\d\d-\d\d-\d\d)'
+    app_match=re.search(app_pattern, item_text, flags=re.I)
+
+    # match how it would be saved in todo.txt
+    txt_pattern = r'^(?:\s*(?:x\s+)*(?:\([A-Z]\))\s+)*(\d\d\d\d-\d\d-\d\d)'
+    txt_match=re.search(txt_pattern, item_text, flags=re.I)
+    if txt_match:
+        item_text = re.sub(txt_match[1], '', item_text, flags=re.I)
+        rematch = txt_match[1]
+
+    if app_match:
+
+        item_text = re.sub(app_match[1], '', item_text, flags=re.I)
+        #will take priority over txt_match
+        rematch = app_match[1]
+
+    return[rematch, item_text]
 
 def parse_due(item_text):
 
@@ -78,15 +100,15 @@ def delete():
     editbox.focus_set()
 
 
-
 def add():
 
     textarea.insert("1.0", editbox.get() + "\n")
     editbox.delete(0, tk.END)
     save()
 
-def refresh(textarea):
+def refresh():
 
+    pos = textarea.index(tk.INSERT)
     f = open(todo_txt_file , "r")
     data = f.read()
     f.close()
@@ -103,6 +125,12 @@ def refresh(textarea):
             parsed_item['pri'], item_text = parse_pri(item_text)
             if parsed_item['pri']:
                 parsed_item['pri'] = parsed_item['pri'] + ' '
+
+            parsed_item['creation'], item_text = parse_creation(item_text)
+            if parsed_item['creation']:
+
+                parsed_item['creation'] = ' created:' + parsed_item['creation'] + ' '
+
 
             parsed_item['due'], item_text = parse_due(item_text)
             if parsed_item['due']:
@@ -123,10 +151,11 @@ def refresh(textarea):
             data = data + '\n'
             previous_due = parsed_item['due'].strip()
 
-        data = data + '{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], parsed_item['text'].strip() ) 
+        data = data + '{}{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], parsed_item['text'].strip(), parsed_item['creation'] ) 
 
     textarea.delete("1.0", "end")
     textarea.insert('1.0',data)
+    textarea.mark_set(tk.INSERT, pos)
 
 def save():
 
@@ -136,9 +165,7 @@ def save():
     items = data.split('\n')
     data = ''
     for item in items:
-        print('tp235ic11')
         if item:
-            print('tp235ic12')
 
             item_text = item
             parsed_item = {}
@@ -149,21 +176,21 @@ def save():
             if parsed_item['pri']:
                 parsed_item['pri'] = parsed_item['pri'] + ' '
 
+            parsed_item['creation'], item_text = parse_creation(item_text)
+            if parsed_item['creation']:
+                parsed_item['creation'] = parsed_item['creation'] + ' '
+
+
             parsed_item['due'], item_text = parse_due(item_text)
             if parsed_item['due']:
                 parsed_item['due'] = parsed_item['due'] + ' '
 
-            data = data + '{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], item_text.strip() ) 
-            print('tp235ic14', parsed_item['completed']) 
-            print('tp235ic15', parsed_item['pri']) 
-            print('tp235ic16', parsed_item['due']) 
-            print('tp235ic17', item_text)
-            print()
+            data = data + '{}{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['creation'], parsed_item['due'], item_text.strip() ) 
 
     f.write(data)
     f.close()
 
-    refresh(textarea)
+    refresh()
 
 def search(textarea, searchbox):
     pos = textarea.index(tk.INSERT)
@@ -212,7 +239,7 @@ editbox.pack(side="right")
 editboxlabel = tk.Label(entryframe,text="add")
 editboxlabel.pack(side="left")
 
-refresh_btn=tk.Button(buttonframe,height=1,width=10, text="Refresh",command=lambda: refresh(textarea))
+refresh_btn=tk.Button(buttonframe,height=1,width=10, text="Refresh",command=lambda: refresh())
 refresh_btn.pack(side="right")
 save_btn=tk.Button(buttonframe,height=1,width=10, text="Save",command=lambda: save())
 save_btn.pack(side="right")
@@ -221,7 +248,7 @@ save_btn.pack(side="right")
 root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
 root.bind('<Control-s>', lambda x: save())
-root.bind('<Control-r>', lambda x: refresh(textarea))
+root.bind('<Control-r>', lambda x: refresh())
 root.bind('<Control-x>', lambda x: complete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 editbox.bind('<Return>', lambda x: add())
@@ -235,6 +262,6 @@ conf_parser.read(conf_file)
 todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
 
 
-refresh(textarea)
+refresh()
 
 root.mainloop()
