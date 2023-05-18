@@ -5,6 +5,68 @@ import os
 from pathlib import Path, WindowsPath
 import configparser
 
+def parse_completion(item_text):
+
+    pattern = '^\s*x\s+'
+    rematch=re.search(pattern, item_text, flags=re.I)
+
+    if rematch:
+        item_text = re.sub(pattern, '', item_text, flags=re.I)
+        return['x ', item_text]
+
+    return['', item_text]
+
+
+def parse_pri(item_text):
+
+    pattern = '^\s*(?:x*\s+)*(\([A-Z]\))'
+    print('tp235ic20', item_text)
+
+    rematch=re.search(pattern, item_text, flags=re.I)
+    print('tp235ic21')
+
+    if rematch:
+        print('tp235ic22')
+        pri = rematch[1].upper().strip()
+        item_text = re.sub(pattern, '', item_text, flags=re.I)
+        return[pri, item_text]
+
+    return['', item_text]
+
+def parse_due(item_text):
+
+    pattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow|monday)'
+    rematch=re.search(pattern, item_text, flags=re.I)
+
+    if rematch:
+        duedate = rematch[0]
+        if duedate.lower() == 'due:today':
+            duedate = 'due:' + date.today().isoformat()
+        if duedate.lower() == 'due:tomorrow':
+            duedate = 'due:' + (date.today() + timedelta(days=1)).isoformat()
+        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        due_weekday_names = ['due:' + weekday_name for weekday_name in weekday_names]
+        if duedate.lower() in due_weekday_names:
+            due_weekday_number = due_weekday_names.index(duedate.lower())
+            for d in range(1,8):
+                nextday = date.today() + timedelta(days = d)                     
+                if nextday.weekday() == due_weekday_number:
+                    duedate = 'due:' + nextday.isoformat()
+        item_text = re.sub(rematch[0], '', item_text, re.I)
+        return [duedate, item_text]
+
+    return['', item_text]
+
+def complete():
+    current_pos = textarea.index(tk.INSERT)
+    split_pos = current_pos.split('.')
+    line_start = '{}.{}'.format(split_pos[0], '0')
+    get_text = textarea.get(line_start)
+    if(get_text == 'x'):
+        delete()
+    else:
+        textarea.insert(line_start,'x')
+
 def delete():
     current_pos = textarea.index(tk.INSERT)
     split_pos = current_pos.split('.')
@@ -15,6 +77,8 @@ def delete():
     textarea.delete(line_start, line_end)
     editbox.focus_set()
 
+
+
 def add():
 
     textarea.insert("1.0", editbox.get() + "\n")
@@ -23,60 +87,33 @@ def add():
 
 def refresh(textarea):
 
-
     f = open(todo_txt_file , "r")
     data = f.read()
     f.close()
     items = data.split('\n')
     parsed_items=[]
-    duepattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow|monday)'
-    pripattern = '^\s*\([A-Z]\)'
-    projpattern = '\+\w*'
-    
+
     for item in items:
-        if re.match(itempattern, item, flags=re.I):
+        if item:
             item_text = item
             parsed_item = {}
-            parsed_item['pri'] = ''
-            primatch=re.search(pripattern, item_text, flags=re.I)
-            if primatch:
-                parsed_item['pri'] = primatch[0].upper().strip()
-                item_text = re.sub(pripattern, '', item_text, flags=re.I)
 
-            parsed_item['due'] = ''
-            duematch=re.search(duepattern, item_text, flags=re.I)
-            if duematch:
-                duedate = duematch[0]
-                if duedate.lower() == 'due:today':
-                    duedate = 'due:' + date.today().isoformat()
-                if duedate.lower() == 'due:tomorrow':
-                    duedate = 'due:' + (date.today() + timedelta(days=1)).isoformat()
-                weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                due_weekday_names = ['due:' + weekday_name for weekday_name in weekday_names]
-                if duedate.lower() in due_weekday_names:
-                    due_weekday_number = due_weekday_names.index(duedate.lower())
-                    for d in range(1,8):
-                        nextday = date.today() + timedelta(days = d)                     
-                        if nextday.weekday() == due_weekday_number:
-                            duedate = 'due:' + nextday.isoformat()
+            parsed_item['completed'], item_text = parse_completion(item_text)
 
-                parsed_item['due'] = duedate
-                item_text = re.sub(duepattern, '', item_text, flags=re.I)
+            parsed_item['pri'], item_text = parse_pri(item_text)
+            if parsed_item['pri']:
+                parsed_item['pri'] = parsed_item['pri'] + ' '
 
-
-            parsed_item['projs'] = []
-            projmatch=re.search(projpattern, item_text)
-            while projmatch:
-                parsed_item['projs'].append(projmatch[0])
-                item_text = re.sub(projpattern, '', item_text)
-                projmatch=re.search(projpattern, item_text)
+            parsed_item['due'], item_text = parse_due(item_text)
+            if parsed_item['due']:
+                parsed_item['due'] = parsed_item['due'] + ' '
 
             parsed_item['text'] = item_text
 
             parsed_items.append(parsed_item)
 
 
-    parsed_items = sorted(parsed_items, key=lambda i: ( i['due'], i['pri'] ) )
+    parsed_items = sorted(parsed_items, key=lambda i: ( i['completed'], i['due'], i['pri'] ) )
 
     data=''
 
@@ -86,13 +123,7 @@ def refresh(textarea):
             data = data + '\n'
             previous_due = parsed_item['due'].strip()
 
-        data = data + parsed_item['pri'].strip() + ' ' + parsed_item['due'].strip() + ' ' + parsed_item['text'].strip()
-        if parsed_item['projs']:
-            parsed_item['projs'].sort()
-            for proj in parsed_item['projs']:
-                data = data + ' ' + proj
-
-        data = data + '\n' 
+        data = data + '{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], parsed_item['text'].strip() ) 
 
     textarea.delete("1.0", "end")
     textarea.insert('1.0',data)
@@ -104,9 +135,31 @@ def save():
     data = textarea.get(1.0, tk.END)
     items = data.split('\n')
     data = ''
-    for i, item in enumerate(items):
-        if re.match(itempattern, item, re.I):
-            data = data + item + '\n'
+    for item in items:
+        print('tp235ic11')
+        if item:
+            print('tp235ic12')
+
+            item_text = item
+            parsed_item = {}
+
+            parsed_item['completed'], item_text = parse_completion(item_text)
+
+            parsed_item['pri'], item_text = parse_pri(item_text)
+            if parsed_item['pri']:
+                parsed_item['pri'] = parsed_item['pri'] + ' '
+
+            parsed_item['due'], item_text = parse_due(item_text)
+            if parsed_item['due']:
+                parsed_item['due'] = parsed_item['due'] + ' '
+
+            data = data + '{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], item_text.strip() ) 
+            print('tp235ic14', parsed_item['completed']) 
+            print('tp235ic15', parsed_item['pri']) 
+            print('tp235ic16', parsed_item['due']) 
+            print('tp235ic17', item_text)
+            print()
+
     f.write(data)
     f.close()
 
@@ -169,12 +222,9 @@ root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
 root.bind('<Control-s>', lambda x: save())
 root.bind('<Control-r>', lambda x: refresh(textarea))
-root.bind('<Control-x>', lambda x: delete())
+root.bind('<Control-x>', lambda x: complete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 editbox.bind('<Return>', lambda x: add())
-
-# utilities
-itempattern = '^\([A-Z]\)\s+.+'
 
 home = str(Path.home())
 
@@ -183,7 +233,6 @@ conf_parser = configparser.ConfigParser()
 conf_parser.read(conf_file)
 
 todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
-
 
 
 refresh(textarea)
