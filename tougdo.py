@@ -1,6 +1,9 @@
 from datetime import date, timedelta
 import tkinter as tk
 import re
+import os
+from pathlib import Path, WindowsPath
+import configparser
 
 def delete():
     current_pos = textarea.index(tk.INSERT)
@@ -20,7 +23,8 @@ def add():
 
 def refresh(textarea):
 
-    f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "r")
+
+    f = open(todo_txt_file , "r")
     data = f.read()
     f.close()
     items = data.split('\n')
@@ -86,7 +90,7 @@ def refresh(textarea):
 
 def save():
 
-    f = open("c:\\users\\benja\\onedrive\\todo_txt\\todo.txt", "w")
+    f = open(todo_txt_file, "w")
 
     data = textarea.get(1.0, tk.END)
     items = data.split('\n')
@@ -162,6 +166,16 @@ editbox.bind('<Return>', lambda x: add())
 
 # utilities
 itempattern = '^\([A-Z]\)\s+.+'
+
+home = str(Path.home())
+
+conf_file = Path.home() / ".tougdo" / "tougdo.conf"
+conf_parser = configparser.ConfigParser()
+conf_parser.read(conf_file)
+
+todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
+
+
 
 refresh(textarea)
 
