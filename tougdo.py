@@ -7,8 +7,6 @@ def delete():
     split_pos = current_pos.split('.')
     line_start = '{}.{}'.format(split_pos[0], '0')
     line_end = '{}.{}'.format(split_pos[0], tk.END)
-    textarea.focus_set()
-    textarea.mark_set(tk.INSERT, current_pos)
     get_text = textarea.get(line_start, line_end)
     editbox.insert(0, get_text)
     textarea.delete(line_start, line_end)
