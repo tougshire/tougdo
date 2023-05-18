@@ -83,11 +83,16 @@ def complete():
     current_pos = textarea.index(tk.INSERT)
     split_pos = current_pos.split('.')
     line_start = '{}.{}'.format(split_pos[0], '0')
-    get_text = textarea.get(line_start)
-    if(get_text == 'x'):
+    get_end = '{}.{}'.format(split_pos[0], '2')
+    get_text = textarea.get(line_start, get_end )
+    print('tp235ig35', '"' + get_text + '"')
+
+    if(get_text == 'x '):
+        print('tp235ig35', 'deleting')
+
         delete()
     else:
-        textarea.insert(line_start,'x')
+        textarea.insert(line_start,'x ')
 
 def delete():
     current_pos = textarea.index(tk.INSERT)
@@ -180,7 +185,6 @@ def save():
             if parsed_item['creation']:
                 parsed_item['creation'] = parsed_item['creation'] + ' '
 
-
             parsed_item['due'], item_text = parse_due(item_text)
             if parsed_item['due']:
                 parsed_item['due'] = parsed_item['due'] + ' '
@@ -226,7 +230,7 @@ entryframe = tk.Frame(root)
 entryframe.pack()
 
 # Set up widgets
-textarea = tk.Text(textframe, width=400)
+textarea = tk.Text(textframe, width=400, undo=True)
 textarea.pack(pady=20, expand='yes')
 
 searchbox = tk.Entry(searchframe)
@@ -247,12 +251,13 @@ save_btn.pack(side="right")
 # Bind shortcuts
 root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
+root.bind('<Control-n>', lambda x: editbox.focus_set())
 root.bind('<Control-s>', lambda x: save())
 root.bind('<Control-r>', lambda x: refresh())
 root.bind('<Control-x>', lambda x: complete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 editbox.bind('<Return>', lambda x: add())
-
+root.unbind('<Control-d>')
 home = str(Path.home())
 
 conf_file = Path.home() / ".tougdo" / "tougdo.conf"
