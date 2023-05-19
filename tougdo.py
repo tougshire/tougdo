@@ -4,6 +4,20 @@ import re
 import os
 from pathlib import Path, WindowsPath
 import configparser
+from tkcalendar import DateEntry
+
+
+class DateEntry(DateEntry):
+    def _validate_date(self):
+        if not self.get():
+            return True 
+        
+        return super()._validate_date()
+
+def set_priority(e):
+    print(e.keysym)
+    if re.match('[A-Za-z]$', e.keysym):
+        priority.set('({})'.format(e.keysym.upper()))
 
 def parse_completion(item_text):
 
@@ -15,7 +29,6 @@ def parse_completion(item_text):
         return['x ', item_text]
 
     return['', item_text]
-
 
 
 def parse_pri(item_text):
@@ -36,20 +49,19 @@ def parse_pri(item_text):
 def parse_creation(item_text):
 
     rematch=''
-    # match how it would be displayed in this app
-    app_pattern = 'created:(\d\d\d\d-\d\d-\d\d)'
-    app_match=re.search(app_pattern, item_text, flags=re.I)
 
     # match how it would be saved in todo.txt
-    txt_pattern = r'^(?:\s*(?:x\s+)*(?:\([A-Z]\))\s+)*(\d\d\d\d-\d\d-\d\d)'
+    txt_pattern = '^\s*(?:(?:x\s+)*(?:\([A-Z]\))\s+)*(\d\d\d\d-\d\d-\d\d)'
     txt_match=re.search(txt_pattern, item_text, flags=re.I)
     if txt_match:
         item_text = re.sub(txt_match[1], '', item_text, flags=re.I)
         rematch = txt_match[1]
 
+    # match how it would be displayed in this app
+    app_pattern = 'created:(\d\d\d\d-\d\d-\d\d)'
+    app_match=re.search(app_pattern, item_text, flags=re.I)
     if app_match:
-
-        item_text = re.sub(app_match[1], '', item_text, flags=re.I)
+        item_text = re.sub(app_match[0], '', item_text, flags=re.I)
         #will take priority over txt_match
         rematch = app_match[1]
 
@@ -85,11 +97,8 @@ def complete():
     line_start = '{}.{}'.format(split_pos[0], '0')
     get_end = '{}.{}'.format(split_pos[0], '2')
     get_text = textarea.get(line_start, get_end )
-    print('tp235ig35', '"' + get_text + '"')
 
     if(get_text == 'x '):
-        print('tp235ig35', 'deleting')
-
         delete()
     else:
         textarea.insert(line_start,'x ')
@@ -99,16 +108,42 @@ def delete():
     split_pos = current_pos.split('.')
     line_start = '{}.{}'.format(split_pos[0], '0')
     line_end = '{}.{}'.format(split_pos[0], tk.END)
-    get_text = textarea.get(line_start, line_end)
-    editbox.insert(0, get_text)
+    item_text = textarea.get(line_start, line_end)
+    parsed_item = {}
+    parsed_item['completed'], item_text = parse_completion(item_text)
+
+    parsed_item['pri'], item_text = parse_pri(item_text)
+    if parsed_item['pri']:
+        priority.set(parsed_item['pri'])
+
+    parsed_item['creation'], item_text = parse_creation(item_text)
+    if parsed_item['creation']:
+
+        parsed_item['creation'] = ' created:' + parsed_item['creation'] + ' '
+
+    parsed_item['due'], item_text = parse_due(item_text)
+    if parsed_item['due']:
+        duelabel, dueisoformat = parsed_item['due'].split(':')
+        add_due.set_date(dueisoformat)
+
+    add_entry.insert(0, item_text)
     textarea.delete(line_start, line_end)
-    editbox.focus_set()
+    add_entry.focus_set()
 
 
 def add():
+    if not add_entry.get() > '':
+        add_entry.focus_set()
+        return
 
-    textarea.insert("1.0", editbox.get() + "\n")
-    editbox.delete(0, tk.END)
+    task = ''
+    if priority.get() > '':
+        task = task + priority.get() + ' '
+    task = task + add_entry.get()
+    if add_due.get():
+        task = task + 'due:' + add_due.get_date().isoformat()
+    textarea.insert("1.0", task + "\n")
+    add_entry.delete(0, tk.END)
     save()
 
 def refresh():
@@ -238,10 +273,26 @@ searchbox.pack(side="right")
 searchboxlabel = tk.Label(searchframe,text="Search")
 searchboxlabel.pack(side="right")
 
-editbox = tk.Entry(entryframe, width=100)
-editbox.pack(side="right")
-editboxlabel = tk.Label(entryframe,text="add")
-editboxlabel.pack(side="left")
+add_label = tk.Label(entryframe,text="add")
+add_label.pack(side='left')
+
+priority=tk.StringVar()
+priority.set('(A)')
+add_priority = tk.OptionMenu(entryframe, priority, '(A)','(B)','(C)','(D)','(E)','(F)','(G)','(H)','(I)','(J)','(K)','(L)','(M)','(N)','(O)','(P)','(Q)','(R)','(S)','(T)','(U)','(V)','(W)','(X)','(Y)','(Z)' )
+add_priority.configure(takefocus=1)
+add_priority.pack(side='left')
+
+add_entry = tk.Entry(entryframe, width=100)
+add_entry.pack(side='left')
+
+add_due_label = tk.Label(entryframe,text="due:")
+add_label.pack(side='left')
+add_due = DateEntry(entryframe, date_pattern='yyyy-MM-dd')
+add_due.delete(0, "end") 
+add_due.pack(side='left')
+
+add_button = tk.Button(entryframe,height=1,width=10,text='Add', command=lambda: add())
+add_button.pack(side='left')
 
 refresh_btn=tk.Button(buttonframe,height=1,width=10, text="Refresh",command=lambda: refresh())
 refresh_btn.pack(side="right")
@@ -251,12 +302,16 @@ save_btn.pack(side="right")
 # Bind shortcuts
 root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
-root.bind('<Control-n>', lambda x: editbox.focus_set())
+root.bind('<Control-n>', lambda x: add_entry.focus_set())
 root.bind('<Control-s>', lambda x: save())
 root.bind('<Control-r>', lambda x: refresh())
 root.bind('<Control-x>', lambda x: complete())
 searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
-editbox.bind('<Return>', lambda x: add())
+add_priority.bind('<KeyPress>', lambda e: set_priority(e))
+add_entry.bind('<Return>', lambda x: add())
+add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
+add_due.bind('<Return>', lambda x: add())
+add_button.bind('<Return>', lambda x: add())
 root.unbind('<Control-d>')
 home = str(Path.home())
 
