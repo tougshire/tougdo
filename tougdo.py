@@ -7,12 +7,58 @@ import configparser
 from tkcalendar import DateEntry
 
 
-class DateEntry(DateEntry):
+class TougDateEntry(DateEntry):
+    def __init__(self, master=None, **kw):
+        super().__init__(master, **kw)
+        self.bind('<space>', self.space_press)
+        self._calendar.bind('<Right>', self.right_press)
+        self._calendar.bind('<Left>', self.left_press)
+
     def _validate_date(self):
-        if not self.get():
-            return True 
+
+        #prior to the default validation convert some convenience terms into actual dates
+        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']        
+        got_date = self.get().lower()
+        if got_date in weekday_names:
+            weekday_number = weekday_names.index(got_date)
+            for d in range(1,8):
+                nextday = date.today() + timedelta(days = d)                     
+                if nextday.weekday() == weekday_number:
+                    self.set_date(nextday)
+        elif got_date == 'today':
+            self.date = self.set_date(date.today())
+        elif got_date == 'tomorrow':
+            self.date = self.set_date(date.today() + timedelta(days=  1))
+
         
         return super()._validate_date()
+
+    def space_press(self, *args):
+        """Trigger self.drop_down on spacebar keypress and set widget state to ['pressed', 'active']."""
+        if 'disabled' not in self.state():
+            self.state(['pressed'])
+            self.drop_down()
+
+    def right_press(self, *args):
+        if 'disabled' not in self.state() and 'pressed' in self.state():
+            self.set_date(self.get_date() + timedelta(days=1))
+            self._calendar.selection_set(self.get_date())
+
+    def left_press(self, *args):
+        if 'disabled' not in self.state() and 'pressed' in self.state():
+            self.set_date(self.get_date() + timedelta(days=1))
+            self._calendar.selection_set(self.get_date())
+
+
+
+
+    
+def dateentry_on_space_press(e):
+    date_entry = e.widget
+    """Trigger self.drop_down on spacebar keypress and set widget state to ['pressed', 'active']."""
+    if 'disabled' not in date_entry.state():
+        date_entry.state(['pressed'])
+        date_entry.drop_down()
 
 def set_priority(e):
     print(e.keysym)
@@ -287,9 +333,11 @@ add_entry.pack(side='left')
 
 add_due_label = tk.Label(entryframe,text="due:")
 add_label.pack(side='left')
-add_due = DateEntry(entryframe, date_pattern='yyyy-MM-dd')
+add_due = TougDateEntry(entryframe, date_pattern='yyyy-MM-dd')
 add_due.delete(0, "end") 
 add_due.pack(side='left')
+add_due.bind('<Return>', lambda x: add())
+
 
 add_button = tk.Button(entryframe,height=1,width=10,text='Add', command=lambda: add())
 add_button.pack(side='left')
@@ -310,7 +358,6 @@ searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 add_priority.bind('<KeyPress>', lambda e: set_priority(e))
 add_entry.bind('<Return>', lambda x: add())
 add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
-add_due.bind('<Return>', lambda x: add())
 add_button.bind('<Return>', lambda x: add())
 root.unbind('<Control-d>')
 home = str(Path.home())
