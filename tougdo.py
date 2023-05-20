@@ -5,7 +5,7 @@ import os
 from pathlib import Path, WindowsPath
 import configparser
 from tkcalendar import DateEntry
-
+from tkinter import filedialog as fd
 
 class TougDateEntry(DateEntry):
     def __init__(self, master=None, **kw):
@@ -13,31 +13,31 @@ class TougDateEntry(DateEntry):
         self.bind('<space>', self.space_press)
         self._calendar.bind('<Right>', self.right_press)
         self._calendar.bind('<Left>', self.left_press)
-
+        self._calendar.bind('<space>', self.space_press)
+  
     def _validate_date(self):
 
-        #prior to the default validation convert some convenience terms into actual dates
-        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']        
-        got_date = self.get().lower()
-        if got_date in weekday_names:
-            weekday_number = weekday_names.index(got_date)
+        #prior to the default validation, convert some convenience terms into dates
+        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        relday_names = ['yesterday', 'today', 'tomorrow']        
+        got = self.get().lower().strip()
+        if got in weekday_names:
+            got_weekday_number = weekday_names.index(got)
             for d in range(1,8):
                 nextday = date.today() + timedelta(days = d)                     
-                if nextday.weekday() == weekday_number:
+                if nextday.weekday() == got_weekday_number:
                     self.set_date(nextday)
-        elif got_date == 'today':
-            self.date = self.set_date(date.today())
-        elif got_date == 'tomorrow':
-            self.date = self.set_date(date.today() + timedelta(days=  1))
+        elif got in relday_names:
+            self.date = self.set_date( date.today() + timedelta( days = relday_names.index(got) - 1 ) )
 
-        
         return super()._validate_date()
 
     def space_press(self, *args):
-        """Trigger self.drop_down on spacebar keypress and set widget state to ['pressed', 'active']."""
         if 'disabled' not in self.state():
-            self.state(['pressed'])
             self.drop_down()
+            self.state(['pressed'])
+            return "break"
+
 
     def right_press(self, *args):
         if 'disabled' not in self.state() and 'pressed' in self.state():
@@ -46,12 +46,8 @@ class TougDateEntry(DateEntry):
 
     def left_press(self, *args):
         if 'disabled' not in self.state() and 'pressed' in self.state():
-            self.set_date(self.get_date() + timedelta(days=1))
+            self.set_date(self.get_date() - timedelta(days=1))
             self._calendar.selection_set(self.get_date())
-
-
-
-
     
 def dateentry_on_space_press(e):
     date_entry = e.widget
@@ -176,7 +172,6 @@ def delete():
     textarea.delete(line_start, line_end)
     add_entry.focus_set()
 
-
 def add():
     if not add_entry.get() > '':
         add_entry.focus_set()
@@ -295,7 +290,6 @@ def search(textarea, searchbox):
 
 items = []
 
-
 root = tk.Tk()
 root.title('Tougshore To Do List')
 font=('Calibri 35')
@@ -362,13 +356,22 @@ add_button.bind('<Return>', lambda x: add())
 root.unbind('<Control-d>')
 home = str(Path.home())
 
-conf_file = Path.home() / ".tougdo" / "tougdo.conf"
+config_files = [
+    Path.cwd() / 'config' / 'tougdo.conf',
+    Path.cwd() / 'config' / 'tougdo.config',
+    Path.home() / '.tougdo' / 'tougdo.conf',
+    Path.home() / '.tougdo' / 'tougdo.config',
+]
+
 conf_parser = configparser.ConfigParser()
-conf_parser.read(conf_file)
+conf_parser.read(config_files)
 
-todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
+try:
+    todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
+except KeyError:
+    todo_txt_file = Path.home() / 'todo.txt'
 
-
+    
 refresh()
 
 root.mainloop()
