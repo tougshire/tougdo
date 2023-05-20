@@ -11,8 +11,11 @@ class TougDateEntry(DateEntry):
     def __init__(self, master=None, **kw):
         super().__init__(master, **kw)
         self.bind('<space>', self.space_press)
-        self._calendar.bind('<Right>', self.right_press)
-        self._calendar.bind('<Left>', self.left_press)
+        self._calendar.bind('<Right>', self.calendar_right_press)
+        self._calendar.bind('<Left>', self.calendar_left_press)
+        self._calendar.bind('<Down>', self.calendar_down_press)
+        self._calendar.bind('<Up>', self.calendar_up_press)
+
         self._calendar.bind('<space>', self.calendar_space_press)
   
     def _validate_date(self):
@@ -44,16 +47,26 @@ class TougDateEntry(DateEntry):
             self.state(['!pressed'])
             return "break"
 
-    def right_press(self, *args):
+    def calendar_right_press(self, *args):
         if 'disabled' not in self.state() and 'pressed' in self.state():
             self.set_date(self.get_date() + timedelta(days=1))
             self._calendar.selection_set(self.get_date())
 
-    def left_press(self, *args):
+    def calendar_left_press(self, *args):
         if 'disabled' not in self.state() and 'pressed' in self.state():
             self.set_date(self.get_date() - timedelta(days=1))
             self._calendar.selection_set(self.get_date())
-    
+
+    def calendar_down_press(self, *args):
+        if 'disabled' not in self.state() and 'pressed' in self.state():
+            self.set_date(self.get_date() + timedelta(days=7))
+            self._calendar.selection_set(self.get_date())
+
+    def calendar_up_press(self, *args):
+        if 'disabled' not in self.state() and 'pressed' in self.state():
+            self.set_date(self.get_date() - timedelta(days=7))
+            self._calendar.selection_set(self.get_date())
+
 def dateentry_on_space_press(e):
     date_entry = e.widget
     """Trigger self.drop_down on spacebar keypress and set widget state to ['pressed', 'active']."""
