@@ -337,18 +337,24 @@ searchbox = tk.Entry(searchframe)
 searchbox.pack(side="right")
 searchboxlabel = tk.Label(searchframe,text="Search")
 searchboxlabel.pack(side="right")
+searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
 
 add_label = tk.Label(entryframe,text="add")
 add_label.pack(side='left')
 
 priority=tk.StringVar()
 priority.set('(A)')
-add_priority = tk.OptionMenu(entryframe, priority, '', '(A)','(B)','(C)','(D)','(E)','(F)','(G)','(H)','(I)','(J)','(K)','(L)','(M)','(N)','(O)','(P)','(Q)','(R)','(S)','(T)','(U)','(V)','(W)','(X)','(Y)','(Z)' )
+#produces a list of one empty string followed by each letter surrounded by parentheses
+letters = [''] + ['({})'.format(chr(chr_num)) for chr_num in range(65,91) ]
+add_priority = tk.OptionMenu(entryframe, priority, *letters )
 add_priority.configure(takefocus=1)
 add_priority.pack(side='left')
+add_priority.bind('<KeyPress>', lambda e: set_priority(e))
 
 add_entry = tk.Entry(entryframe, width=100)
 add_entry.pack(side='left')
+add_entry.bind('<Return>', lambda x: add())
+add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
 
 add_due_label = tk.Label(entryframe,text="due:")
 add_label.pack(side='left')
@@ -357,27 +363,21 @@ add_due.delete(0, "end")
 add_due.pack(side='left')
 add_due.bind('<Return>', lambda x: add())
 
-
 add_button = tk.Button(entryframe,height=1,width=10,text='Add', command=lambda: add())
 add_button.pack(side='left')
+add_button.bind('<Return>', lambda x: add())
 
 refresh_btn=tk.Button(buttonframe,height=1,width=10, text="Refresh",command=lambda: refresh())
 refresh_btn.pack(side="right")
 save_btn=tk.Button(buttonframe,height=1,width=10, text="Save",command=lambda: save())
 save_btn.pack(side="right")
 
-# Bind shortcuts
 root.bind('<Control-e>', lambda x: textarea.focus_set())
 root.bind('<Control-f>', lambda x: searchbox.focus_set())
 root.bind('<Control-n>', lambda x: add_entry.focus_set())
 root.bind('<Control-s>', lambda x: save())
 root.bind('<Control-r>', lambda x: refresh())
 root.bind('<Control-x>', lambda x: complete())
-searchbox.bind('<Return>', lambda x: search(textarea, searchbox))
-add_priority.bind('<KeyPress>', lambda e: set_priority(e))
-add_entry.bind('<Return>', lambda x: add())
-add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
-add_button.bind('<Return>', lambda x: add())
 root.unbind('<Control-d>')
 
 todo_txt_file = get_todo_file()
