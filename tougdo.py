@@ -38,7 +38,6 @@ class TougDateEntry(DateEntry):
             self.state(['pressed'])
             return "break"
 
-
     def right_press(self, *args):
         if 'disabled' not in self.state() and 'pressed' in self.state():
             self.set_date(self.get_date() + timedelta(days=1))
@@ -57,9 +56,12 @@ def dateentry_on_space_press(e):
         date_entry.drop_down()
 
 def set_priority(e):
-    print(e.keysym)
+
+    print('tp235k757', e.keysym )
     if re.match('[A-Za-z]$', e.keysym):
         priority.set('({})'.format(e.keysym.upper()))
+    elif e.keysym == 'space':
+        priority.set('')
 
 def parse_completion(item_text):
 
@@ -318,7 +320,7 @@ add_label.pack(side='left')
 
 priority=tk.StringVar()
 priority.set('(A)')
-add_priority = tk.OptionMenu(entryframe, priority, '(A)','(B)','(C)','(D)','(E)','(F)','(G)','(H)','(I)','(J)','(K)','(L)','(M)','(N)','(O)','(P)','(Q)','(R)','(S)','(T)','(U)','(V)','(W)','(X)','(Y)','(Z)' )
+add_priority = tk.OptionMenu(entryframe, priority, '', '(A)','(B)','(C)','(D)','(E)','(F)','(G)','(H)','(I)','(J)','(K)','(L)','(M)','(N)','(O)','(P)','(Q)','(R)','(S)','(T)','(U)','(V)','(W)','(X)','(Y)','(Z)' )
 add_priority.configure(takefocus=1)
 add_priority.pack(side='left')
 
@@ -371,7 +373,6 @@ try:
 except KeyError:
     todo_txt_file = Path.home() / 'todo.txt'
 
-    
 refresh()
 
 root.mainloop()
