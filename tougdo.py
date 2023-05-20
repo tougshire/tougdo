@@ -13,7 +13,7 @@ class TougDateEntry(DateEntry):
         self.bind('<space>', self.space_press)
         self._calendar.bind('<Right>', self.right_press)
         self._calendar.bind('<Left>', self.left_press)
-        self._calendar.bind('<space>', self.space_press)
+        self._calendar.bind('<space>', self.calendar_space_press)
   
     def _validate_date(self):
 
@@ -36,6 +36,12 @@ class TougDateEntry(DateEntry):
         if 'disabled' not in self.state():
             self.drop_down()
             self.state(['pressed'])
+            return "break"
+        
+    def calendar_space_press(self, *args):
+        if 'disabled' not in self.state():
+            self.drop_down()
+            self.state(['!pressed'])
             return "break"
 
     def right_press(self, *args):
@@ -381,6 +387,7 @@ root.bind('<Control-x>', lambda x: complete())
 root.unbind('<Control-d>')
 
 todo_txt_file = get_todo_file()
+
 
 refresh()
 
