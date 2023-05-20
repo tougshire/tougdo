@@ -289,6 +289,29 @@ def search(textarea, searchbox):
         textarea.focus_set()
         textarea.mark_set(tk.INSERT, pos)
 
+def get_todo_file():
+
+    config_files = [
+        Path.cwd() / 'config' / 'tougdo.conf',
+        Path.cwd() / 'config' / 'tougdo.config',
+        Path.home() / '.tougdo' / 'tougdo.conf',
+        Path.home() / '.tougdo' / 'tougdo.config',
+    ]
+
+    conf_parser = configparser.ConfigParser()
+    conf_parser.read(config_files)
+
+    try:
+        todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
+    except KeyError:
+        todo_txt_file = Path.home() / 'todo.txt'
+
+    try:
+        f = open(todo_txt_file, 'r')
+    except OSError:
+        return False
+    
+    return todo_txt_file
 
 items = []
 
@@ -356,22 +379,8 @@ add_entry.bind('<Return>', lambda x: add())
 add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
 add_button.bind('<Return>', lambda x: add())
 root.unbind('<Control-d>')
-home = str(Path.home())
 
-config_files = [
-    Path.cwd() / 'config' / 'tougdo.conf',
-    Path.cwd() / 'config' / 'tougdo.config',
-    Path.home() / '.tougdo' / 'tougdo.conf',
-    Path.home() / '.tougdo' / 'tougdo.config',
-]
-
-conf_parser = configparser.ConfigParser()
-conf_parser.read(config_files)
-
-try:
-    todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
-except KeyError:
-    todo_txt_file = Path.home() / 'todo.txt'
+todo_txt_file = get_todo_file()
 
 refresh()
 
