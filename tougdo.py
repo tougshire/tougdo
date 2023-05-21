@@ -83,41 +83,62 @@ def set_priority(e):
 
 def parse_completion(item_text):
 
-    pattern = '^\s*x\s+'
-    rematch=re.search(pattern, item_text, flags=re.I)
+    item_text = item_text.strip()
 
-    if rematch:
-        item_text = re.sub(pattern, '', item_text, flags=re.I)
-        return['x ', item_text]
+    x_pattern = '^x\s+'
 
-    return['', item_text]
+    regmatch=re.search(x_pattern, item_text, flags=re.I)
+
+    if regmatch:
+
+        item_text = re.sub(x_pattern, '', item_text, flags=re.I)
+
+        completion_date = ''
+        completiondate_pattern = '^(\d\d\d\d-\d\d-\d\d)\s+'
+        regmatch=re.search(completiondate_pattern, item_text)
+        if regmatch:
+            completion_date = regmatch[1].strip() + ' '
+            item_text = re.sub(completiondate_pattern, '', item_text)
+
+        return['x ', completion_date + ' ', item_text]
+
+    return['', '', item_text]
 
 
 def parse_pri(item_text):
 
-    pattern = '^\s*(?:x*\s+)*(\(([A-Z])\))'
+    item_text = item_text.strip()
+    pri = ''
 
-    rematch=re.search(pattern, item_text, flags=re.I)
+    parenth_pattern = '^(?:x*\s+)*(\(([A-Z])\))'
+    regmatch=re.search(parenth_pattern, item_text, flags=re.I)
 
-    if rematch:
-        pri = rematch[1].upper().strip()
-        
-        item_text = re.sub('\\(' + rematch[2] + '\\)', '', item_text, flags=re.I)
+    if regmatch:
+        pri = regmatch[1].upper().strip()
+        item_text = re.sub('\\(' + regmatch[2] + '\\)', '', item_text, flags=re.I)
 
-        return[pri, item_text]
 
-    return['', item_text]
+    key_pattern = 'pri:([A-Z])'
+    regmatch=re.search(key_pattern, item_text, flags=re.I)
+
+    if regmatch:
+        pri = '(' + regmatch[1].upper().strip() + ')'
+        item_text = re.sub('\\(' + regmatch[1] + '\\)', '', item_text, flags=re.I)
+
+    item_text = item_text.strip()
+
+    return[pri, item_text]
 
 def parse_creation(item_text):
 
-    rematch=''
+    regmatch=''
 
     # match how it would be saved in todo.txt
     txt_pattern = '^\s*(?:(?:x\s+)*(?:\([A-Z]\))\s+)*(\d\d\d\d-\d\d-\d\d)'
     txt_match=re.search(txt_pattern, item_text, flags=re.I)
     if txt_match:
         item_text = re.sub(txt_match[1], '', item_text, flags=re.I)
-        rematch = txt_match[1]
+        regmatch = txt_match[1]
 
     # match how it would be displayed in this app
     app_pattern = 'created:(\d\d\d\d-\d\d-\d\d)'
@@ -125,17 +146,17 @@ def parse_creation(item_text):
     if app_match:
         item_text = re.sub(app_match[0], '', item_text, flags=re.I)
         #will take priority over txt_match
-        rematch = app_match[1]
+        regmatch = app_match[1]
 
-    return[rematch, item_text]
+    return[regmatch, item_text]
 
 def parse_due(item_text):
 
     pattern = 'due:((\d\d\d\d-\d\d-\d\d)|today|tomorrow|monday)'
-    rematch=re.search(pattern, item_text, flags=re.I)
+    regmatch=re.search(pattern, item_text, flags=re.I)
 
-    if rematch:
-        duedate = rematch[0]
+    if regmatch:
+        duedate = regmatch[0]
         if duedate.lower() == 'due:today':
             duedate = 'due:' + date.today().isoformat()
         if duedate.lower() == 'due:tomorrow':
@@ -148,12 +169,13 @@ def parse_due(item_text):
                 nextday = date.today() + timedelta(days = d)                     
                 if nextday.weekday() == due_weekday_number:
                     duedate = 'due:' + nextday.isoformat()
-        item_text = re.sub(rematch[0], '', item_text, re.I)
+        item_text = re.sub(regmatch[0], '', item_text, re.I)
         return [duedate, item_text]
 
     return['', item_text]
 
 def complete():
+
     current_pos = textarea.index(tk.INSERT)
     split_pos = current_pos.split('.')
     line_start = '{}.{}'.format(split_pos[0], '0')
@@ -163,7 +185,10 @@ def complete():
     if(get_text == 'x '):
         delete()
     else:
+        #tp235la14
+        textarea.insert(line_start, date.today().isoformat() + ' ')
         textarea.insert(line_start,'x ')
+
 
 def delete():
     current_pos = textarea.index(tk.INSERT)
@@ -172,11 +197,17 @@ def delete():
     line_end = '{}.{}'.format(split_pos[0], tk.END)
     item_text = textarea.get(line_start, line_end)
     parsed_item = {}
-    parsed_item['completed'], item_text = parse_completion(item_text)
-
+    parsed_item['is_completed'], parsed_item['completion_date'], item_text = parse_completion(item_text)
+    is_completed.set(1)
     parsed_item['pri'], item_text = parse_pri(item_text)
     if parsed_item['pri']:
-        priority.set(parsed_item['pri'])
+        if parsed_item['is_completed'] == '':
+            priority.set(parsed_item['pri'])
+        elif parsed_item['is_completed'] == 'x ':
+            priority.set('')
+            priority_letter_match = re.match('\((\w)\)', parsed_item['pri'])
+            if priority_letter_match:
+                item_text = item_text + ' pri:' + priority_letter_match[1] 
 
     parsed_item['creation'], item_text = parse_creation(item_text)
     if parsed_item['creation']:
@@ -221,7 +252,7 @@ def refresh():
             item_text = item
             parsed_item = {}
 
-            parsed_item['completed'], item_text = parse_completion(item_text)
+            parsed_item['is_completed'], parsed_item['completion_date'], item_text = parse_completion(item_text)
 
             parsed_item['pri'], item_text = parse_pri(item_text)
             if parsed_item['pri']:
@@ -242,7 +273,7 @@ def refresh():
             parsed_items.append(parsed_item)
 
 
-    parsed_items = sorted(parsed_items, key=lambda i: ( i['completed'], i['due'], i['pri'] ) )
+    parsed_items = sorted(parsed_items, key=lambda i: ( i['is_completed'], i['due'], i['pri'] ) )
 
     data=''
 
@@ -252,7 +283,7 @@ def refresh():
             data = data + '\n'
             previous_due = parsed_item['due'].strip()
 
-        data = data + '{}{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['due'], parsed_item['text'].strip(), parsed_item['creation'] ) 
+        data = data + '{}{}{}{}{}\n'.format( parsed_item['is_completed'], parsed_item['pri'], parsed_item['due'], parsed_item['text'].strip(), parsed_item['creation'] ) 
 
     textarea.delete("1.0", "end")
     textarea.insert('1.0',data)
@@ -271,7 +302,7 @@ def save():
             item_text = item
             parsed_item = {}
 
-            parsed_item['completed'], item_text = parse_completion(item_text)
+            parsed_item['is_completed'], parsed_item['completion_date'], item_text = parse_completion(item_text)
 
             parsed_item['pri'], item_text = parse_pri(item_text)
             if parsed_item['pri']:
@@ -285,7 +316,7 @@ def save():
             if parsed_item['due']:
                 parsed_item['due'] = parsed_item['due'] + ' '
 
-            data = data + '{}{}{}{}{}\n'.format( parsed_item['completed'], parsed_item['pri'], parsed_item['creation'], parsed_item['due'], item_text.strip() ) 
+            data = data + '{}{}{}{}{}\n'.format( parsed_item['is_completed'], parsed_item['pri'], parsed_item['creation'], parsed_item['due'], item_text.strip() ) 
 
     f.write(data)
     f.close()
@@ -369,13 +400,17 @@ add_priority.configure(takefocus=1)
 add_priority.pack(side='left')
 add_priority.bind('<KeyPress>', lambda e: set_priority(e))
 
+is_completed=tk.IntVar()
+add_complete = tk.Checkbutton(entryframe, variable=is_completed, onvalue=1, text='Complete')
+add_complete.pack(side='left')
+
 add_entry = tk.Entry(entryframe, width=100)
 add_entry.pack(side='left')
 add_entry.bind('<Return>', lambda x: add())
 add_entry.bind('<Shift-Keypress-Tab>', add_priority.focus_set())
 
 add_due_label = tk.Label(entryframe,text="due:")
-add_label.pack(side='left')
+add_due_label.pack(side='left')
 add_due = TougDateEntry(entryframe, date_pattern='yyyy-MM-dd')
 add_due.delete(0, "end") 
 add_due.pack(side='left')
