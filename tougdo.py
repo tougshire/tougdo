@@ -67,13 +67,6 @@ class TougDateEntry(DateEntry):
             self.set_date(self.get_date() - timedelta(days=7))
             self._calendar.selection_set(self.get_date())
 
-def dateentry_on_space_press(e):
-    date_entry = e.widget
-    """Trigger self.drop_down on spacebar keypress and set widget state to ['pressed', 'active']."""
-    if 'disabled' not in date_entry.state():
-        date_entry.state(['pressed'])
-        date_entry.drop_down()
-
 def set_priority(e):
 
     if re.match('[A-Za-z]$', e.keysym):
