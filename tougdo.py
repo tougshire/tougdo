@@ -76,7 +76,6 @@ def dateentry_on_space_press(e):
 
 def set_priority(e):
 
-    print('tp235k757', e.keysym )
     if re.match('[A-Za-z]$', e.keysym):
         priority.set('({})'.format(e.keysym.upper()))
     elif e.keysym == 'space':
@@ -299,9 +298,9 @@ def search(textarea, searchbox):
         pos = "1.0"
     textarea.tag_config('found', background='yellow')
     searchstring = searchbox.get()
-    pos = textarea.search(searchstring, pos, stopindex=tk.END )
+    pos = textarea.search(searchstring, pos, stopindex=tk.END, nocase=True )
     if pos == "":
-        pos = textarea.search(searchstring, "1.0", stopindex=tk.END )
+        pos = textarea.search(searchstring, "1.0", stopindex=tk.END, nocase=True )
 
     if pos:
         textarea.tag_add('found', pos, '%s+%dc' % (pos, len(searchstring)))
