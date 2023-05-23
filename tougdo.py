@@ -610,13 +610,7 @@ edit_completiondate.pack( side='left' )
 edit_completiondate_label.pack_forget()
 edit_completiondate.pack_forget()
 
-edit_creationdate_label = tk.Label( edit_frame, text='creation date' )
-edit_creationdate_label.pack( side='left' )
 edit_creationdate_var = tk.StringVar()
-edit_creationdate = tk.Entry( edit_frame, textvariable=edit_creationdate_var )
-edit_creationdate.pack( side='left' )
-edit_creationdate_label.pack_forget()
-edit_creationdate.pack_forget()
 
 edit_linetext_var = tk.StringVar()
 
