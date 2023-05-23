@@ -596,6 +596,7 @@ edit_due_label.pack( side='left' )
 edit_due_var = tk.StringVar()
 edit_due = tk.Entry( edit_frame, textvariable=edit_due_var )
 edit_due.pack( side='left' )
+edit_due.bind('<Return>', lambda x: item_add_update())
 
 edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
 edit_iscomplete_label.pack( side='left' )
