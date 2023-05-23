@@ -22,7 +22,8 @@ def edit_set_priority(e):
     elif re.match('[a-z]',e.keysym[0:1]):
         return "break"
 
-def item_add():
+# adds an item from the edit widgets. Deletes it first if the item already exists
+def item_add_update():
 
     global items
 
@@ -58,14 +59,28 @@ def item_add():
         if re.match( date_iso_pattern, iso_due_var):
             item['due'] = iso_due_var
 
-        item['text'] = entry
+        item['text'] = edit_entry_var.get()
 
+        print ('tp235nb04', item )
+
+        for i, find_item in enumerate( items ):
+            if find_item['line_text'] == edit_linetext_var.get():
+                deleted_item = items.pop( i )
+                break
+
+        print ('tp235nb05', item )
         item['line_text'] = item_to_text( item )
+        print ('tp235nb06', item )
 
         items.append(item)
+        
         items_sort()
         file_save()
         main_refresh()
+
+        edit_linetext_var.set('')
+        edit_entry_var.set('')
+
 
 def item_delete_by_text():
     
@@ -73,8 +88,8 @@ def item_delete_by_text():
 
     line_text, line_start, line_end = get_line_text_from_main()
 
-    for i, item in enumerate( items ):
-        if item['line_text'] == line_text:
+    for i, find_item in enumerate( items ):
+        if find_item['line_text'] == line_text:
             deleted_item = items.pop( i )
             break
     
@@ -84,6 +99,84 @@ def item_delete_by_text():
     edit_creationdate_var.set( deleted_item['creation_date'] )
     edit_due_var.set( deleted_item['due'] )
     edit_entry_var.set( deleted_item['text'] )
+
+    edit_entry.focus_set()
+
+    file_save()
+
+    return "break"
+
+def item_set_complete():
+
+    global items
+    
+    line_text, line_start, line_end = get_line_text_from_main()
+
+    for i, item in enumerate( items ):
+        if item['line_text'] == line_text:
+            items[i]['is_completed'] = 'x' if items[i]['is_completed'] == '' else ''
+            items[i]['line_text'] = item_to_text(item)
+            break
+
+    items_sort()
+    file_save()
+    main_refresh()
+
+def item_to_text( item ):
+
+    working_text = ''
+
+    if item['is_completed']:
+
+        working_text = working_text + 'x '
+        working_text = working_text + item['completion_date'] + ' '
+
+        working_text = working_text + item['text'] + ' '
+
+        if item['priority']:
+            working_text = working_text + 'pri:' + item['priority'] + ' '
+
+        if item['creation_date']:
+            working_text = working_text + 'created:' + item['creation_date'] + ' '
+
+        if item['due']:
+            working_text = working_text + 'due:' + item['due'] + ' '
+
+    else: # if not completed
+
+        if item['priority']:
+            working_text = working_text + '(' + item['priority'] + ') '
+
+        if item['due']:
+            working_text = working_text + 'due:' + item['due'] + ' '
+
+        working_text = working_text + item['text'] + ' '
+
+        if item['creation_date']:
+            working_text = working_text + 'created:' + item['creation_date'] + ' '
+
+    return working_text
+
+def item_edit():
+    
+    global items
+
+    line_text, line_start, line_end = get_line_text_from_main()
+
+    for i, item in enumerate( items ):
+        if item['line_text'] == line_text:
+            edited_item = items[i]
+            break
+    
+    edit_iscomplete_var.set( 'x' if edited_item['is_completed'] else '' )
+    edit_completiondate_var.set( edited_item['completion_date'] )
+    edit_priority_var.set( edited_item['priority'] )
+    edit_creationdate_var.set( edited_item['creation_date'] )
+    edit_due_var.set( edited_item['due'] )
+    edit_entry_var.set( edited_item['text'] )
+
+    edit_linetext_var.set( line_text )
+    print('tp235na52', edit_linetext_var.get())
 
     edit_entry.focus_set()
 
@@ -477,6 +570,7 @@ main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
 main_text_widget.bind('<Return>', lambda x: main_return_key())
 main_text_widget.bind('<Control-Return>', lambda x: main_return_key('reverse'))
 main_text_widget.bind('<Tab>', lambda x: "break")
+main_text_widget.bind('<Control-e>', lambda x: item_edit())
 
 message_var = tk.StringVar()
 message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
@@ -524,9 +618,11 @@ edit_creationdate.pack( side='left' )
 edit_creationdate_label.pack_forget()
 edit_creationdate.pack_forget()
 
+edit_linetext_var = tk.StringVar()
+
 edit_apply = tk.Button( edit_frame, text='apply', command=item_add )
 edit_apply.pack(side='left')
-edit_apply.bind('<Return>', lambda x: item_add())
+edit_apply.bind('<Return>', lambda x: item_add_update())
 
 search_var = tk.StringVar()
 search_entry = tk.Entry(search_frame, textvariable=search_var)
