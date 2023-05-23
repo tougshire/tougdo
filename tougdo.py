@@ -459,6 +459,10 @@ font=('Calibri 35')
 main_frame = tk.Frame( root )
 main_frame.pack( expand=1, fill="both" )
 
+message_frame = tk.Frame( root )
+message_frame.pack()
+
+
 edit_frame = tk.Frame( root )
 edit_frame.pack()
 
@@ -473,6 +477,11 @@ main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
 main_text_widget.bind('<Return>', lambda x: main_return_key())
 main_text_widget.bind('<Control-Return>', lambda x: main_return_key('reverse'))
 main_text_widget.bind('<Tab>', lambda x: "break")
+
+message_var = tk.StringVar()
+message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
+message_entry.pack(side="right")
+message_entry.pack_forget()
 
 edit_entry_label = tk.Label( edit_frame, text='entry' )
 edit_entry_label.pack(side="left")
