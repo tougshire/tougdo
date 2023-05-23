@@ -7,107 +7,166 @@ import configparser
 from tkcalendar import DateEntry
 from tkinter import filedialog as fd
 
-def add_item():
+def edit_set_priority(e):
 
-    working_text = ''
+    if re.match('[A-Za-z]$', e.keysym):
+        edit_priority_var.set( e.keysym.upper())
+        return "break"
+    elif e.keysym == 'space':
+        edit_priority_var.set('')
+        return "break"
+    elif len( e.keysym ) == 1:
+        return "break"
+    # this matches keysyms like 'period', 'bracketleft', 'greater', etc...
+    # keys like 'Return', 'Tab' 'F4', 'Escape' are generally capitalized, so won't trigger return "break"
+    elif re.match('[a-z]',e.keysym[0:1]):
+        return "break"
+
+def item_add():
+
+    global items
+
     entry = edit_entry.get().strip()
 
     if entry:
 
-        if edit_iscomplete_var.get() == 1:
-            working_text = working_text + 'x '
-            working_text = working_text + date.today().isoformat() + ' '
-            working_text = working_text + entry + ' '
+        item = {}
 
-            priority_var = edit_priority_var.get()
-            if priority_var > '' and priority_var in letters:
-                working_text = working_text + 'pri:' + priority_var + ' '
+        if edit_iscomplete_var.get() == 'x':
 
-            creationdate_var = edit_creationdate_var.get()
-            iso_creationdate_var = iso_date( creationdate_var )
-            if re.match( date_iso_pattern, iso_creationdate_var):
-                working_text = working_text + 'created:' + iso_creationdate_var + ' '
+            item['is_completed'] = 'x'
+            item['completion_date'] = date.today().isoformat()
+        
+        else:
+            item['is_completed'] = ''
+            item['completion_date'] = ''
 
-            due_var = edit_due_var.get()
+        item['priority'] = ''
+        priority_var = edit_priority_var.get()
+        if priority_var > '' and priority_var in letters:
+            item['priority'] = priority_var
+
+        item['creation_date'] = ''
+        creationdate_var = edit_creationdate_var.get()
+        iso_creationdate_var = get_iso_date( creationdate_var )
+        if re.match( date_iso_pattern, iso_creationdate_var):
+            item['creation_date'] = iso_creationdate_var
+
+        item['due'] = ''
+        due_var = edit_due_var.get()    
+        iso_due_var = get_iso_date( due_var )
+        if re.match( date_iso_pattern, iso_due_var):
+            item['due'] = iso_due_var
+
+        item['text'] = entry
+
+        item['line_text'] = item_to_text( item )
+
+        items.append(item)
+        items_sort()
+        file_save()
+        main_refresh()
+
+def item_delete_by_text():
     
-            iso_due_var = iso_date( due_var )
-            if re.match( date_iso_pattern, iso_due_var):
-                working_text = working_text + 'due:' + iso_due_var + ' '
+    global items
 
-        else: # if not completed
+    line_text, line_start, line_end = get_line_text_from_main()
 
-            priority_var = edit_priority_var.get()
-
-            if priority_var > '' and priority_var in letters:
-                working_text = working_text + '(' + priority_var + ') '
-
-            due_var = edit_due_var.get()
-            iso_due_var = iso_date( due_var )
-            if re.match( date_iso_pattern, iso_due_var):
-                working_text = working_text + 'due:' + iso_due_var + ' '
-
-            working_text = working_text + entry + ' '
-
-            creationdate_var = edit_creationdate_var.get()
-            iso_creationdate_var = iso_date( creationdate_var )
-            if re.match( date_iso_pattern, iso_creationdate_var):
-                working_text = working_text + 'created:' + iso_creationdate_var + ' '
-
-        main_text_widget.insert( "1.0", working_text + '\n' )
-        edit_entry_var.set('')
-
-        save()
-
-def delete_item():
+    for i, item in enumerate( items ):
+        if item['line_text'] == line_text:
+            deleted_item = items.pop( i )
+            break
     
-    item, line_start, line_end = get_item_text_from_line()
-    parsed_item = parse_item( item )
-
-    edit_iscomplete_var.set( 1 if parsed_item['is_completed'] else 0 )
-    edit_completiondate_var.set( parsed_item['completion_date'] )
-    edit_priority_var.set( parsed_item['priority'] )
-    edit_creationdate_var.set( parsed_item['creation_date'] )
-    edit_due_var.set( parsed_item['due'] )
-    edit_entry_var.set( parsed_item['text'] )
-
-    main_text_widget.delete(line_start, line_end)
+    edit_iscomplete_var.set( 'x' if deleted_item['is_completed'] else '' )
+    edit_completiondate_var.set( deleted_item['completion_date'] )
+    edit_priority_var.set( deleted_item['priority'] )
+    edit_creationdate_var.set( deleted_item['creation_date'] )
+    edit_due_var.set( deleted_item['due'] )
+    edit_entry_var.set( deleted_item['text'] )
 
     edit_entry.focus_set()
 
-    save()
+    file_save()
 
     return "break"
 
-def set_complete():
+def item_set_complete():
+
+    global items
     
-    item, line_start, line_end = get_item_text_from_line()
-    parsed_item = parse_item( item )
+    line_text, line_start, line_end = get_line_text_from_main()
+
+    for i, item in enumerate( items ):
+        if item['line_text'] == line_text:
+            items[i]['is_completed'] = 'x' if items[i]['is_completed'] == '' else ''
+            items[i]['line_text'] = item_to_text(item)
+            break
+
+    items_sort()
+    file_save()
+    main_refresh()
+
+def item_to_text( item ):
+
     working_text = ''
 
-    working_text = working_text + 'x '
-    working_text = working_text + date.today().isoformat() + ' '
-    working_text = working_text + parsed_item['text'] + ' '
+    if item['is_completed']:
 
-    priority_var = parsed_item['priority']
-    if priority_var > '' and priority_var in letters:
-        working_text = working_text + 'pri:' + priority_var + ' '
+        working_text = working_text + 'x '
+        working_text = working_text + item['completion_date'] + ' '
 
-    creationdate_var = parsed_item['creation_date']
-    iso_creationdate_var = iso_date( creationdate_var )
-    if re.match( date_iso_pattern, iso_creationdate_var):
-        working_text = working_text + 'created:' + iso_creationdate_var + ' '
+        working_text = working_text + item['text'] + ' '
 
-    due_var = parsed_item['due']
-    iso_due_var = iso_date( due_var )
-    if re.match( date_iso_pattern, iso_due_var):
-        working_text = working_text + 'due:' + iso_due_var + ' '
+        if item['priority']:
+            working_text = working_text + 'pri:' + item['priority'] + ' '
 
-    main_text_widget.delete(line_start, line_end)
-    main_text_widget.insert(line_start, working_text)
-    save()
+        if item['creation_date']:
+            working_text = working_text + 'created:' + item['creation_date'] + ' '
 
+        if item['due']:
+            working_text = working_text + 'due:' + item['due'] + ' '
 
-def get_item_text_from_line():
+    else: # if not completed
+
+        if item['priority']:
+            working_text = working_text + '(' + item['priority'] + ') '
+
+        if item['due']:
+            working_text = working_text + 'due:' + item['due'] + ' '
+
+        working_text = working_text + item['text'] + ' '
+
+        if item['creation_date']:
+            working_text = working_text + 'created:' + item['creation_date'] + ' '
+
+    return working_text
+
+def items_sort():
+
+    global items
+
+    items = sorted( items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
+
+def get_iso_date(datestr):
+
+        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
+        iso_date = datestr.lower()
+        if iso_date == 'today':
+            iso_date = date.today().isoformat()
+        elif iso_date == 'tomorrow':
+            iso_date = (date.today() + timedelta(days=1)).isoformat()
+        elif iso_date in weekday_names:
+            weekday_number = weekday_names.index(iso_date)
+            for d in range(1,8):
+                nextday = date.today() + timedelta(days = d)                     
+                if nextday.weekday() == weekday_number:
+                    iso_date = nextday.isoformat()
+
+        return iso_date
+
+def get_line_text_from_main():
 
     current_pos = main_text_widget.index(tk.INSERT)
     split_pos = current_pos.split('.')
@@ -176,7 +235,7 @@ def parse_due(item_text):
     duedate = ''
 
     if match:
-        duedate = iso_date(match[1])
+        duedate = get_iso_date(match[1])
 
         item_text = re.sub(match[0], '', item_text, re.I)
 
@@ -219,146 +278,27 @@ def parse_item( item ):
 
     return parsed_item
 
-def refresh():
+def file_get_items():
+
+    global items
 
     f = open(todo_txt_file , "r")
     data = f.read()
     f.close()
-    items = data.split('\n')
-    parsed_items=[]
-    main_text = ''
+    file_items = data.split('\n')
+    items=[]
 
-    pos = main_text_widget.index(tk.INSERT)
+    for file_item in file_items:
 
-    for item in items:
-
-        if item:
-
-            parsed_item = parse_item( item )
-            parsed_items.append(parsed_item)
-
-    if parsed_items:
-
-        parsed_items = sorted(parsed_items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
-
-        previous_due = parsed_items[0]['due']
-
-        for parsed_item in parsed_items:
-
-            working_text = ''
-
-            if previous_due != parsed_item['due']:
-                main_text = main_text + '\n' 
-                previous_due = parsed_item['due']
-
-            if 'is_completed' in parsed_item and parsed_item['is_completed']:
-                working_text = working_text + parsed_item['is_completed'] + ' '
-                if 'completion_date' in parsed_item and parsed_item['completion_date']:
-                    working_text = working_text + parsed_item['completion_date'] + ' '
-                working_text = working_text + parsed_item['text'] + ' '
-                if 'priority' in parsed_item and parsed_item['priority']:
-                    working_text = working_text + 'pri:' + parsed_item['priority'] + ' '
-                if 'creation_date' in parsed_item and parsed_item['creation_date']:
-                    working_text = working_text + 'created:' + parsed_item['creation_date'] + ' '
-                if 'due' in parsed_item and parsed_item['due']:
-                    working_text = working_text + 'due:' + parsed_item['due'] + ' '
-
-            else: # if not completed
-                if 'priority' in parsed_item and parsed_item['priority']:
-                    working_text = working_text + '(' + parsed_item['priority'] + ') '
-                if 'due' in parsed_item and parsed_item['due']:
-                    working_text = working_text + 'due:' + parsed_item['due'] + ' '
-                working_text = working_text + parsed_item['text'] + ' '
-                if 'creation_date' in parsed_item and parsed_item['creation_date']:
-                    working_text = working_text + 'created:' + parsed_item['creation_date'] + ' '
-
-            main_text = main_text + working_text.strip() + '\n'
-
-        main_text_widget.delete( "1.0", tk.END )
-        main_text_widget.insert( "1.0", main_text )
-        main_text_widget.mark_set( tk.INSERT, pos )
-
-def save():
-
-    data = main_text_widget.get( "1.0", tk.END )
-    items = data.split('\n')
-    parsed_items=[]
-    file_text = ''
-
-    for item in items:
-
-        if item:
-
-            parsed_item = {}
-            item_text = item
-
-            parsed_item['is_completed'], parsed_item['completion_date'], item_text = parse_completion(item_text)
-            parsed_item['priority'], item_text = parse_priority(item_text)
-            parsed_item['creation_date'], item_text = parse_creation(item_text)
-            parsed_item['due'], item_text = parse_due(item_text)
-            parsed_item['text'] = item_text.strip()
-
-            parsed_items.append(parsed_item)
-
-    if parsed_items:
-
-        parsed_items = sorted(parsed_items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
-
-        for parsed_item in parsed_items:
-
-            working_text = ''
-
-            if 'is_completed' in parsed_item and parsed_item['is_completed']:
-                working_text = working_text + parsed_item['is_completed'] + ' '
-                if 'completion_date' in parsed_item and parsed_item['completion_date']:
-                    working_text = working_text + parsed_item['completion_date'] + ' '
-                if 'creation_date' in parsed_item and parsed_item['creation_date']:
-                    working_text = working_text + parsed_item['creation_date'] + ' '
-                working_text = working_text + parsed_item['text'] + ' '
-                if 'priority' in parsed_item and parsed_item['priority']:
-                    working_text = working_text + 'pri:' + parsed_item['priority'] + ' '
-                if 'due' in parsed_item and parsed_item['due']:
-                    working_text = working_text + 'due:' + parsed_item['due'] + ' '
-
-            else: # if not completed
-                if 'priority' in parsed_item and parsed_item['priority']:
-                    working_text = working_text + '(' + parsed_item['priority'] + ') '
-                if 'creation_date' in parsed_item and parsed_item['creation_date']:
-                    working_text = working_text + parsed_item['creation_date'] + ' '
-                if 'due' in parsed_item and parsed_item['due']:
-                    working_text = working_text + 'due:' + parsed_item['due'] + ' '
-                working_text = working_text + parsed_item['text'] + ' '
+        if file_item:
+            item = parse_item( file_item )
+            item['line_text'] = item_to_text( item )
     
-            file_text = file_text + working_text.strip() + '\n'
+            items.append( item )
 
-        f = open(todo_txt_file , "w")
-        f.write(file_text)
-        f.close()
-        for backnum in range(5,1,-1):
-            older_backup_name = 'todo_back_{}.txt'.format( backnum )
-            newer_backup_name = 'todo_back_{}.txt'.format( backnum - 1)
-            n = open(Path(backup_path) / newer_backup_name, 'a+')
-            n.seek(0)
-            contents = n.read()
-            n.close()
-            o = open(Path(backup_path) / older_backup_name, 'w')
-            o.write(contents)
-            o.close()
-        backup_name = 'todo_back_1.txt'    
-        b = open(Path(backup_path) / backup_name , "w")
-        b.write(file_text)
-        b.close()
- 
-    refresh()
+    items = sorted( items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
 
-def edit_focus():
-    widget = root.focus_get()
-    if widget == main_text_widget:
-        edit_entry.focus_set()
-    else:
-        main_text_widget.focus_set()
-
-def get_todo_file():
+def file_get_paths():
 
     config_files = [
         Path.cwd() / 'config' / 'tougdo.conf',
@@ -386,38 +326,78 @@ def get_todo_file():
 
     return [ todo_txt_file, backup_path ]
 
-def iso_date(datestr):
-        weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+def file_save():
 
-        iso_date = datestr.lower()
-        if iso_date == 'today':
-            iso_date = date.today().isoformat()
-        elif iso_date == 'tomorrow':
-            iso_date = (date.today() + timedelta(days=1)).isoformat()
-        elif iso_date in weekday_names:
-            weekday_number = weekday_names.index(iso_date)
-            for d in range(1,8):
-                nextday = date.today() + timedelta(days = d)                     
-                if nextday.weekday() == weekday_number:
-                    iso_date = nextday.isoformat()
+    global items
 
-        print('tp235ma17', datestr, iso_date)
-        return iso_date
+    main_text = ''
 
-def set_priority(e):
+    for item in items:
+        main_text = main_text + item['line_text'] + '\n'
 
-    if re.match('[A-Za-z]$', e.keysym):
-        edit_priority_var.set( e.keysym.upper())
-        return "break"
-    elif e.keysym == 'space':
-        edit_priority_var.set('')
-        return "break"
-    elif len( e.keysym ) == 1:
-        return "break"
-    # this matches keysyms like 'period', 'bracketleft', 'greater', etc...
-    # keys like 'Return', 'Tab' 'F4', 'Escape' are generally capitalized, so won't trigger return "break"
-    elif re.match('[a-z]',e.keysym[0:1]):
-        return "break"
+    f = open( todo_txt_file , "w")
+    f.write( main_text )
+    f.close()
+    for backnum in range(5,1,-1):
+        older_backup_name = 'todo_back_{}.txt'.format( backnum )
+        newer_backup_name = 'todo_back_{}.txt'.format( backnum - 1)
+        n = open(Path(backup_path) / newer_backup_name, 'a+')
+        n.seek(0)
+        contents = n.read()
+        n.close()
+        o = open(Path(backup_path) / older_backup_name, 'w')
+        o.write(contents)
+        o.close()
+    backup_name = 'todo_back_1.txt'    
+    b = open(Path(backup_path) / backup_name , "w")
+    b.write(main_text)
+    b.close()
+
+def main_ignore_keys( e ):
+
+    good_keys = [
+        'Up',
+        'Down',
+        'Left',
+        'Right',
+    ]
+    good_keys = good_keys + [ 'F{}'.format( n ) for n in range(1,25) ] # allowing for some unusual situation where there are more than 12 F keys
+
+    if not e.state & 0x4: #control key pressed
+        if not e.keysym in good_keys:
+            return "break"
+
+    return e.keysym
+
+def main_refresh():
+
+    global items
+
+    pos = main_text_widget.index(tk.INSERT)
+
+    main_text = ''
+
+    if items:
+
+        previous_due = items[0]['due']
+        for item in items:
+            if previous_due != item['due']:
+                main_text = main_text + '\n'
+                previous_due = item['due']
+
+            main_text = main_text + item['line_text'] + '\n'
+
+    main_text_widget.delete( "1.0", tk.END )
+    main_text_widget.insert( "1.0", main_text )
+    main_text_widget.mark_set( tk.INSERT, pos )
+
+
+def edit_focus():
+    widget = root.focus_get()
+    if widget == main_text_widget:
+        edit_entry.focus_set()
+    else:
+        main_text_widget.focus_set()
 
 def search( direction='forward' ):
 
@@ -456,17 +436,15 @@ def search( direction='forward' ):
         main_text_widget.mark_set(tk.INSERT, pos)
         main_text_widget.see(pos)
 
-def main_text_return_key( direction='forward' ):
+def main_return_key( direction='forward' ):
 
-    print ('tp235mc50', direction)
     if 'found' in main_text_widget.tag_names():
         search( direction )
 
     return "break"
 
-todo_txt_file, backup_path = get_todo_file()
+todo_txt_file, backup_path = file_get_paths()
 
-items = []
 
 # some utility variables
 # produces a list of one empty string followed by each letter surrounded by parentheses
@@ -487,14 +465,14 @@ edit_frame.pack()
 search_frame = tk.Frame( root )
 search_frame.pack()
 
-main_text_widget = tk.Text(main_frame,  width=400, undo=True)
+main_text_widget = tk.Text( main_frame,  width=400, undo=True )
 main_text_widget.pack(pady=20, expand='yes')
+main_text_widget.bind('<KeyPress>', lambda e: main_ignore_keys(e))
 main_text_widget.unbind('<Control-d')
-main_text_widget.bind('<Control-d>', lambda x: delete_item())
-main_text_widget.bind('<Return>', lambda x: main_text_return_key())
-main_text_widget.bind('<Control-Return>', lambda x: main_text_return_key('reverse'))
+main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
+main_text_widget.bind('<Return>', lambda x: main_return_key())
+main_text_widget.bind('<Control-Return>', lambda x: main_return_key('reverse'))
 main_text_widget.bind('<Tab>', lambda x: "break")
-
 
 edit_entry_label = tk.Label( edit_frame, text='entry' )
 edit_entry_label.pack(side="left")
@@ -507,7 +485,7 @@ edit_priority_label.pack( side='left' )
 edit_priority_var = tk.StringVar()
 edit_priority = tk.Entry( edit_frame, textvariable=edit_priority_var, width=2 )
 edit_priority.pack( side='left' )
-edit_priority.bind('<KeyPress>', lambda e: set_priority(e))
+edit_priority.bind('<KeyPress>', lambda e: edit_set_priority(e))
 
 edit_due_label = tk.Label( edit_frame, text='due' )
 edit_due_label.pack( side='left' )
@@ -517,8 +495,8 @@ edit_due.pack( side='left' )
 
 edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
 edit_iscomplete_label.pack( side='left' )
-edit_iscomplete_var = tk.IntVar()
-edit_iscomplete = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var)
+edit_iscomplete_var = tk.StringVar()
+edit_iscomplete = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var, onvalue='x', offvalue='')
 edit_iscomplete.pack( side='left' )
 
 edit_completiondate_label = tk.Label( edit_frame, text='completion date' )
@@ -537,9 +515,9 @@ edit_creationdate.pack( side='left' )
 edit_creationdate_label.pack_forget()
 edit_creationdate.pack_forget()
 
-edit_apply = tk.Button( edit_frame, text='apply', command=add_item )
+edit_apply = tk.Button( edit_frame, text='apply', command=item_add )
 edit_apply.pack(side='left')
-edit_apply.bind('<Return>', lambda x: add_item())
+edit_apply.bind('<Return>', lambda x: item_add())
 
 search_var = tk.StringVar()
 search_entry = tk.Entry(search_frame, textvariable=search_var)
@@ -548,15 +526,19 @@ search_entry_label = tk.Label(search_frame,text="search")
 search_entry_label.pack(side="right")
 search_entry.bind('<Return>', lambda x: search())
 
-root.bind('<Control-s>', lambda x: save())
-root.bind('<Control-r>', lambda x: refresh())
+root.bind('<Control-s>', lambda x: file_save())
+root.bind('<Control-r>', lambda x: main_refresh())
 root.bind('<Control-n>', lambda x: edit_entry.focus_set())
-root.bind('<Control-x>', lambda x: set_complete())
+root.bind('<Control-x>', lambda x: item_set_complete())
 root.unbind('<Control-d')
 root.bind('<Control-f>', lambda x: search_entry.focus_set())
 root.bind('<Control-e>', lambda x: edit_focus())
 
-refresh()
+items = []
+
+file_get_items()
+
+main_refresh()
 
 main_text_widget.focus_set()
 
