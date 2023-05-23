@@ -582,6 +582,7 @@ edit_entry_label.pack(side="left")
 edit_entry_var = tk.StringVar()
 edit_entry = tk.Entry( edit_frame, textvariable=edit_entry_var, width=40 )
 edit_entry.pack( side='left' )
+edit_entry.bind('<Return>', lambda x: item_add_update())
 
 edit_priority_label = tk.Label( edit_frame, text='priority' )
 edit_priority_label.pack( side='left' )
@@ -614,7 +615,7 @@ edit_creationdate_var = tk.StringVar()
 
 edit_linetext_var = tk.StringVar()
 
-edit_apply = tk.Button( edit_frame, text='apply', command=item_add )
+edit_apply = tk.Button( edit_frame, text='apply', command=item_add_update )
 edit_apply.pack(side='left')
 edit_apply.bind('<Return>', lambda x: item_add_update())
 
