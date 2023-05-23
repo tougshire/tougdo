@@ -5,7 +5,15 @@ import os
 from pathlib import Path, WindowsPath
 import configparser
 from tkcalendar import DateEntry
-from tkinter import filedialog as fd
+from tkinter import filedialog as fd, messagebox
+
+def edit_focus():
+    widget = root.focus_get()
+    if widget == main_text_widget:
+        edit_entry.focus_set()
+    else:
+        main_text_widget.focus_set()
+
 
 def edit_set_priority(e):
 
@@ -84,25 +92,29 @@ def item_add_update():
 
 def item_delete_by_text():
     
+
     global items
 
     line_text, line_start, line_end = get_line_text_from_main()
 
+    found = 0
     for i, find_item in enumerate( items ):
         if find_item['line_text'] == line_text:
-            deleted_item = items.pop( i )
+            found = 1
             break
-    
-    edit_iscomplete_var.set( 'x' if deleted_item['is_completed'] else '' )
-    edit_completiondate_var.set( deleted_item['completion_date'] )
-    edit_priority_var.set( deleted_item['priority'] )
-    edit_creationdate_var.set( deleted_item['creation_date'] )
-    edit_due_var.set( deleted_item['due'] )
-    edit_entry_var.set( deleted_item['text'] )
 
-    edit_entry.focus_set()
+    if not found:
+        messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
+        return "break"
+    
+    yn = messagebox.askokcancel('Delete', 'Delete ' + find_item['text'] + ' ?')
+    if not yn:
+        return "break"
+
+    deleted_item = items.pop(i)
 
     file_save()
+    main_refresh()
 
     return "break"
 
@@ -448,6 +460,13 @@ def file_save():
 
 def main_ignore_keys( e ):
 
+    if e.keysym == 'Tab':
+        if e.state & 0x1: #shift key pressed
+            search_filter.focus_set()
+        else:
+            edit_entry.focus_set()
+        return "break"
+        
     good_keys = [
         'Up',
         'Down',
@@ -456,11 +475,37 @@ def main_ignore_keys( e ):
     ]
     good_keys = good_keys + [ 'F{}'.format( n ) for n in range(1,25) ] # allowing for some unusual situation where there are more than 12 F keys
 
+
     if not e.state & 0x4: #control key pressed
         if not e.keysym in good_keys:
             return "break"
 
     return e.keysym
+
+def main_filter():
+
+    global items
+
+    searchstring = search_var.get()
+    pos = main_text_widget.index(tk.INSERT)
+
+    main_text = ''
+
+    if items:
+
+        previous_due = items[0]['due']
+        for item in items:
+
+            if searchstring.lower() in item['line_text'].lower():
+                if previous_due != item['due']:
+                    main_text = main_text + '\n'
+                    previous_due = item['due']
+
+                main_text = main_text + item['line_text'] + '\n'
+
+    main_text_widget.delete( "1.0", tk.END )
+    main_text_widget.insert( "1.0", main_text )
+    main_text_widget.mark_set( tk.INSERT, pos )
 
 def main_refresh():
 
@@ -484,16 +529,12 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
+def main_search( direction='forward' ):
 
-def edit_focus():
-    widget = root.focus_get()
-    if widget == main_text_widget:
-        edit_entry.focus_set()
-    else:
-        main_text_widget.focus_set()
-
-def search( direction='forward' ):
-
+    if search_filter_var.get():
+        main_filter()
+        return
+    
     pos = main_text_widget.index(tk.INSERT)    
     if not pos > "":
         pos = "1.0"
@@ -532,12 +573,11 @@ def search( direction='forward' ):
 def main_return_key( direction='forward' ):
 
     if 'found' in main_text_widget.tag_names():
-        search( direction )
+        main_search( direction )
 
     return "break"
 
 todo_txt_file, backup_path = file_get_paths()
-
 
 # some utility variables
 # produces a list of one empty string followed by each letter surrounded by parentheses
@@ -555,7 +595,6 @@ main_frame.pack( expand=1, fill="both" )
 message_frame = tk.Frame( root )
 message_frame.pack()
 
-
 edit_frame = tk.Frame( root )
 edit_frame.pack()
 
@@ -569,7 +608,6 @@ main_text_widget.unbind('<Control-d')
 main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
 main_text_widget.bind('<Return>', lambda x: main_return_key())
 main_text_widget.bind('<Control-Return>', lambda x: main_return_key('reverse'))
-main_text_widget.bind('<Tab>', lambda x: "break")
 main_text_widget.bind('<Control-e>', lambda x: item_edit())
 
 message_var = tk.StringVar()
@@ -625,7 +663,13 @@ search_entry = tk.Entry(search_frame, textvariable=search_var)
 search_entry.pack(side="right")
 search_entry_label = tk.Label(search_frame,text="search")
 search_entry_label.pack(side="right")
-search_entry.bind('<Return>', lambda x: search())
+search_entry.bind('<Return>', lambda x: main_search())
+
+search_filter_var = tk.IntVar()
+search_filter = tk.Checkbutton(search_frame, variable=search_filter_var, text="filter")
+search_filter.pack(side="right")
+search_filter.config(takefocus=True)
+
 
 root.bind('<Control-s>', lambda x: file_save())
 root.bind('<Control-r>', lambda x: main_refresh())
@@ -642,5 +686,6 @@ file_get_items()
 main_refresh()
 
 main_text_widget.focus_set()
+
 
 root.mainloop()
