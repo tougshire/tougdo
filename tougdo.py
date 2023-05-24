@@ -145,23 +145,23 @@ def item_edit( delete='' ):
             else:
                 found_item = items[i]
             break
-    
-    if not found_item:
+
+    try:
+        edit_iscomplete_var.set( found_item['is_completed'] )
+        edit_completiondate_var.set( found_item['completion_date'] )
+        edit_priority_var.set( found_item['priority'] )
+        edit_creationdate_var.set( found_item['creation_date'] )
+        edit_due_var.set( found_item['due'] )
+        edit_entry_var.set( found_item['text'] )
+
+        edit_linetext_var.set( line_text )
+
+        edit_entry.focus_set()
+
+        file_save()
+
+    except UnboundLocalError:
         messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
-        return "break"
-
-    edit_iscomplete_var.set( found_item['is_completed'] )
-    edit_completiondate_var.set( found_item['completion_date'] )
-    edit_priority_var.set( found_item['priority'] )
-    edit_creationdate_var.set( found_item['creation_date'] )
-    edit_due_var.set( found_item['due'] )
-    edit_entry_var.set( found_item['text'] )
-
-    edit_linetext_var.set( line_text )
-
-    edit_entry.focus_set()
-
-    file_save()
 
     return "break"
 
@@ -512,27 +512,7 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
-def xxmain_refresh():
 
-    global items
-
-    pos = main_text_widget.index(tk.INSERT)
-
-    main_text = ''
-
-    if items:
-
-        previous_due = items[0]['due']
-        for item in items:
-            if previous_due != item['due']:
-                main_text = main_text + '\n'
-                previous_due = item['due']
-
-            main_text = main_text + item['line_text'] + '\n'
-
-    main_text_widget.delete( "1.0", tk.END )
-    main_text_widget.insert( "1.0", main_text )
-    main_text_widget.mark_set( tk.INSERT, pos )
 
 todo_txt_file, backup_path = file_get_paths()
 
