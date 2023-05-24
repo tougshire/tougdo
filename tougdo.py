@@ -79,34 +79,6 @@ def item_add_update():
 
         edit_linetext_var.set('')
 
-# deletes the first time who's item['text'] matches the text of the current line
-def item_delete_by_text():
-    
-    global items
-
-    line_text, line_start, line_end = get_line_text_from_main()
-
-    found = 0
-    for i, find_item in enumerate( items ):
-        if find_item['line_text'] == line_text:
-            found = 1
-            break
-
-    if not found:
-        messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
-        return "break"
-    
-    yn = messagebox.askokcancel('Delete', 'Delete ' + find_item['text'] + ' ?')
-    if not yn:
-        return "break"
-
-    deleted_item = items.pop(i)
-
-    file_save()
-    main_refresh()
-
-    return "break"
-
 def item_set_complete():
 
     global items
@@ -158,28 +130,32 @@ def item_to_text( item ):
 
     return working_text
 
-def item_edit():
+def item_edit( delete='' ):
     
     global items
 
     line_text, line_start, line_end = get_line_text_from_main()
 
+    #find the item who's line_text matches the line in the main widget at the cursor
     for i, item in enumerate( items ):
         if item['line_text'] == line_text:
-            edited_item = items[i]
+            if delete == 'DELETE':
+                found_item = items.pop(i)
+                main_refresh()
+            else:
+                found_item = items[i]
             break
     
-    if not edited_item:
+    if not found_item:
         messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
         return "break"
 
-
-    edit_iscomplete_var.set( 'x' if edited_item['is_completed'] else '' )
-    edit_completiondate_var.set( edited_item['completion_date'] )
-    edit_priority_var.set( edited_item['priority'] )
-    edit_creationdate_var.set( edited_item['creation_date'] )
-    edit_due_var.set( edited_item['due'] )
-    edit_entry_var.set( edited_item['text'] )
+    edit_iscomplete_var.set( found_item['is_completed'] )
+    edit_completiondate_var.set( found_item['completion_date'] )
+    edit_priority_var.set( found_item['priority'] )
+    edit_creationdate_var.set( found_item['creation_date'] )
+    edit_due_var.set( found_item['due'] )
+    edit_entry_var.set( found_item['text'] )
 
     edit_linetext_var.set( line_text )
 
@@ -204,41 +180,6 @@ def item_set_complete():
     items_sort()
     file_save()
     main_refresh()
-
-def item_to_text( item ):
-
-    working_text = ''
-
-    if item['is_completed']:
-
-        working_text = working_text + 'x '
-        working_text = working_text + item['completion_date'] + ' '
-
-        working_text = working_text + item['text'] + ' '
-
-        if item['priority']:
-            working_text = working_text + 'pri:' + item['priority'] + ' '
-
-        if item['creation_date']:
-            working_text = working_text + 'created:' + item['creation_date'] + ' '
-
-        if item['due']:
-            working_text = working_text + 'due:' + item['due'] + ' '
-
-    else: # if not completed
-
-        if item['priority']:
-            working_text = working_text + '(' + item['priority'] + ') '
-
-        if item['due']:
-            working_text = working_text + 'due:' + item['due'] + ' '
-
-        working_text = working_text + item['text'] + ' '
-
-        if item['creation_date']:
-            working_text = working_text + 'created:' + item['creation_date'] + ' '
-
-    return working_text
 
 def items_sort():
 
@@ -487,7 +428,7 @@ def main_handle_keys( e ):
             edit_priority.select_range( 0, tk.END )
             return "break"
         if e.keysym == 'x':
-            item_delete_by_text()
+            item_edit('DELETE')
             return "break"
 
     # main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
