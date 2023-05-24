@@ -8,6 +8,7 @@ from tkcalendar import DateEntry
 from tkinter import filedialog as fd, messagebox
 
 
+
 def edit_set_priority(e):
 
     if re.match('[A-Za-z]$', e.keysym):
@@ -564,6 +565,10 @@ def main_refresh():
                     show = anymatch
 
             if show:
+                if filter_completed_var.get() and item['is_completed'] == 'x':
+                    show = 0
+
+            if show:
                 if previous_due != item['due']:
                     main_text = main_text + '\n'
                     previous_due = item['due']
@@ -655,6 +660,7 @@ if __name__ == "__main__":
     filter_text_widget = tk.Entry(search_frame, textvariable=filter_text_var)
     filter_text_widget.pack(side="left")
     filter_text_widget.bind('<Return>', lambda x: main_refresh())
+    filter_text_widget.bind('<Control-f>', lambda x: filter_clear())
     filter_text_widget.bind('<KeyRelease>', lambda x: main_refresh())
 
     filter_priority_label = tk.Label(search_frame,text="filter priority")
@@ -672,6 +678,10 @@ if __name__ == "__main__":
     filter_contexts_projects.pack(side="left")
     filter_contexts_projects.bind('<Return>', lambda x: main_refresh())
     filter_contexts_projects.bind('<KeyRelease>', lambda x: main_refresh())
+
+    filter_completed_var = tk.IntVar()
+    filter_completed_widget = tk.Checkbutton( search_frame, variable=filter_completed_var, text='hide completed', onvalue=1, offvalue=0, command=main_refresh )
+    filter_completed_widget.pack( side='left' )
 
     filter_clear_button = tk.Button( search_frame, text='Clear Filters', command=filter_clear )
     filter_clear_button.pack(side="left")
