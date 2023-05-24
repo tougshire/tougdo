@@ -26,7 +26,6 @@ def edit_set_priority(e):
 # adds an item from the edit widgets. Deletes it first if the item already exists
 def item_add_update():
 
-    print('tp235o646')
     global items
 
     entry = edit_entry.get().strip()
@@ -75,9 +74,16 @@ def item_add_update():
         items_sort()
         file_save()
         main_refresh()
+        main_find_item( item['line_text'] )
         main_text_widget.focus_set()
 
         edit_linetext_var.set('')
+
+def item_new():
+
+    edit_entry.focus_set()
+    edit_entry_var.set('')
+    edit_linetext_var.set('')
 
 def item_set_complete():
 
@@ -196,6 +202,14 @@ def get_iso_date(datestr):
             iso_date = date.today().isoformat()
         elif iso_date == 'tomorrow':
             iso_date = (date.today() + timedelta(days=1)).isoformat()
+        elif iso_date == 'next week':
+            nextweek = date.today() + timedelta( days=7)
+            iso_date = nextweek.isoformat()
+        elif iso_date == 'next month':
+            nextmonth = date.today() + timedelta( weeks=4 )
+            while not nextmonth.day == date.today().day:
+                nextmonth = nextmonth + timedelta( days=1 )
+                iso_date = nextmonth.isoformat()
         elif iso_date in weekday_names:
             weekday_number = weekday_names.index(iso_date)
             for d in range(1,8):
@@ -269,7 +283,7 @@ def parse_creation(item_text):
 
 def parse_due(item_text):
 
-    pattern = 'due:((' +  date_iso_pattern  + ')|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)'
+    pattern = 'due:((' +  date_iso_pattern  + ')|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|next month)'
     match = re.search(pattern, item_text, flags=re.I)
     duedate = ''
 
@@ -431,9 +445,6 @@ def main_handle_keys( e ):
             item_edit('DELETE')
             return "break"
 
-    # main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
-    # main_text_widget.bind('<Control-e>', lambda x: item_edit())
-
 
     good_keys = [
         'Up',
@@ -448,6 +459,14 @@ def main_handle_keys( e ):
             return "break"
 
     return e.keysym
+
+def main_find_item( line_text ):
+
+    pos = main_text_widget.search( line_text, "1.0", stopindex=tk.END  )
+    if pos:
+        main_text_widget.focus_set()
+        main_text_widget.mark_set(tk.INSERT, pos)
+        main_text_widget.see(pos)
 
 def main_refresh():
 
@@ -625,7 +644,7 @@ if __name__ == "__main__":
 
     root.bind('<Control-s>', lambda x: file_save() )
     root.bind('<Control-r>', lambda x: main_refresh() )
-    root.bind('<Control-n>', lambda x: edit_entry.focus_set() )
+    root.bind('<Control-n>', lambda x: item_new() )
     root.unbind('<Control-d')
     root.bind('<Control-f>', lambda x: filter_text.focus_set() )
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
