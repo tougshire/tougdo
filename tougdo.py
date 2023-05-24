@@ -55,10 +55,11 @@ def item_add_update():
             item['creation_date'] = iso_creationdate
 
         item['due'] = ''
-        due = edit_due_var.get()    
-        iso_due = get_iso_date( due )
-        if re.match( date_iso_pattern, iso_due):
-            item['due'] = iso_due
+        due = edit_due_var.get().strip()
+        if due > '':
+            item['due'] = get_iso_date( due )
+            if item['due'] == '':
+                messagebox.showerror( 'Date Error', 'There was a problem with the due date.  The item has been added without a due date')
 
         item['text'] = edit_entry_var.get()
 
@@ -197,27 +198,45 @@ def get_iso_date(datestr):
 
         weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
-        iso_date = datestr.lower()
-        if iso_date == 'today':
-            iso_date = date.today().isoformat()
-        elif iso_date == 'tomorrow':
-            iso_date = (date.today() + timedelta(days=1)).isoformat()
-        elif iso_date == 'next week':
+        datestr = datestr.lower().strip()
+
+        iso_date = re.match( date_iso_pattern, datestr )
+        if iso_date:
+            return iso_date.group(0)
+
+        if datestr == 'today':
+            return date.today().isoformat()
+
+        if datestr == 'tomorrow':
+            return (date.today() + timedelta(days=1)).isoformat()
+
+        if datestr == 'next week':
             nextweek = date.today() + timedelta( days=7)
-            iso_date = nextweek.isoformat()
-        elif iso_date == 'next month':
+            return nextweek.isoformat()
+
+        if datestr == 'next month':
             nextmonth = date.today() + timedelta( weeks=4 )
             while not nextmonth.day == date.today().day:
                 nextmonth = nextmonth + timedelta( days=1 )
-                iso_date = nextmonth.isoformat()
-        elif iso_date in weekday_names:
-            weekday_number = weekday_names.index(iso_date)
+                return nextmonth.isoformat()
+
+        if datestr in weekday_names:
+            weekday_number = weekday_names.index(datestr)
             for d in range(1,8):
                 nextday = date.today() + timedelta(days = d)                     
                 if nextday.weekday() == weekday_number:
-                    iso_date = nextday.isoformat()
+                    return nextday.isoformat()
 
-        return iso_date
+        if datestr[0:len('next')] == 'next':
+            weekday_name = datestr[len('next') + 1:]
+            if weekday_name in weekday_names:
+                weekday_number = weekday_names.index(weekday_name)
+                for d in range(1,8):
+                    nextday = date.today() + timedelta(days = d)                     
+                    if nextday.weekday() == weekday_number:
+                        return ( nextday + timedelta( days=7 ) ).isoformat()
+
+        return ''
 
 def get_line_text_from_main():
 
@@ -537,8 +556,6 @@ def main_refresh():
     main_text_widget.delete( "1.0", tk.END )
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
-
-
 
 todo_txt_file, backup_path = file_get_paths()
 
