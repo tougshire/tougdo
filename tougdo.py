@@ -410,7 +410,7 @@ def filter_clear():
 
     filter_priority_var.set('')
     filter_text_var.set('')
-    filter_contextprojects_var.set('')
+    filter_contexts_projects_var.set('')
     main_refresh()
 
 def main_handle_keys( e ):
@@ -418,10 +418,8 @@ def main_handle_keys( e ):
     if e.keysym == 'Tab':
         if e.state & 0x1: #shift key pressed
             e.widget.tk_focusPrev().focus()
-#            filter_text_widget.focus_set()
         else:
             e.widget.tk_focusNext().focus()
-#            edit_entry_widget.focus_set()
         return "break"
 
     if e.state & 0x4: #control key pressed
@@ -475,7 +473,7 @@ def main_refresh():
     pos = main_text_widget.index(tk.INSERT)
     filter_text = filter_text_var.get()
     filter_priority = filter_priority_var.get()
-    filter_contextprojects_string = filter_contextprojects_var.get().lower()
+    filter_contexts_projects_string = filter_contexts_projects_var.get().lower()
   
     main_text = ''
 
@@ -497,15 +495,14 @@ def main_refresh():
                         show = 0
 
             if show:
-                if filter_contextprojects_string:
+                if filter_contexts_projects_string:
                     #starting with 'test @one +two @three +three'
                     #item_context_projects should be [ '@one', '+two' '@three', '+three' ]
                     item_contexts_projects = re.findall( '(?:@|\+)\w+', item['text'] )
 
                     #starting with 'test @one, +two; three'
                     #filter_context_projects should be [ 'test', @one', '+two', 'three' ]
-                    filter_contexts_projects = re.split('\s*,\s*|\s*;\s*|\s+', filter_contextprojects_string)
-
+                    filter_contexts_projects = re.split('\s*,\s*|\s*;\s*|\s+', filter_contexts_projects_string)
 
                     #starting with [ 'test', '@one', '+two', 'three' ]
                     #filter_contexts will be [ '@test', '@one', '@three' ] and filter_projects will be [ '+test', '+two', '+three' ]
@@ -634,13 +631,13 @@ if __name__ == "__main__":
     filter_priority_widget.bind('<Return>', lambda x: main_refresh())
     filter_priority_widget.bind('<KeyRelease>', lambda x: main_refresh())
 
-    filter_contextprojects_label = tk.Label(search_frame,text="filter contexts & projects")
-    filter_contextprojects_label.pack(side="left")
-    filter_contextprojects_var = tk.StringVar()
-    filter_contextprojects = tk.Entry(search_frame, textvariable=filter_contextprojects_var, width=5)
-    filter_contextprojects.pack(side="left")
-    filter_contextprojects.bind('<Return>', lambda x: main_refresh())
-    filter_contextprojects.bind('<KeyRelease>', lambda x: main_refresh())
+    filter_contexts_projects_label = tk.Label(search_frame,text="filter contexts & projects")
+    filter_contexts_projects_label.pack(side="left")
+    filter_contexts_projects_var = tk.StringVar()
+    filter_contexts_projects = tk.Entry(search_frame, textvariable=filter_contexts_projects_var, width=5)
+    filter_contexts_projects.pack(side="left")
+    filter_contexts_projects.bind('<Return>', lambda x: main_refresh())
+    filter_contexts_projects.bind('<KeyRelease>', lambda x: main_refresh())
 
     filter_clear_button = tk.Button( search_frame, text='Clear Filters', command=filter_clear )
     filter_clear_button.pack(side="left")
