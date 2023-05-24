@@ -89,10 +89,9 @@ def item_add_update():
         edit_linetext_var.set('')
         edit_entry_var.set('')
 
-
+# deletes the first time who's item['text'] matches the text of the current line
 def item_delete_by_text():
     
-
     global items
 
     line_text, line_start, line_end = get_line_text_from_main()
@@ -180,6 +179,11 @@ def item_edit():
             edited_item = items[i]
             break
     
+    if not edited_item:
+        messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
+        return "break"
+
+
     edit_iscomplete_var.set( 'x' if edited_item['is_completed'] else '' )
     edit_completiondate_var.set( edited_item['completion_date'] )
     edit_priority_var.set( edited_item['priority'] )
@@ -458,11 +462,18 @@ def file_save():
     b.write(main_text)
     b.close()
 
+def filter_clear():
+
+    filter_priority_var.set('')
+    filter_text_var.set('')
+    filter_contextprojects_var.set('')
+    main_refresh()
+
 def main_ignore_keys( e ):
 
     if e.keysym == 'Tab':
         if e.state & 0x1: #shift key pressed
-            search_filter.focus_set()
+            filter_text.focus_set()
         else:
             edit_entry.focus_set()
         return "break"
@@ -482,13 +493,15 @@ def main_ignore_keys( e ):
 
     return e.keysym
 
-def main_filter():
+def main_refresh():
 
     global items
 
-    searchstring = search_var.get()
     pos = main_text_widget.index(tk.INSERT)
-
+    filter_text = filter_text_var.get()
+    filter_priority = filter_priority_var.get()
+    filter_contextprojects_string = filter_contextprojects_var.get().lower()
+  
     main_text = ''
 
     if items:
@@ -496,7 +509,45 @@ def main_filter():
         previous_due = items[0]['due']
         for item in items:
 
-            if searchstring.lower() in item['line_text'].lower():
+            show = 1
+
+            if show:
+                if filter_text:
+                    if not filter_text.lower() in item['text'].lower():
+                        show = 0
+
+            if show:
+                if filter_priority:
+                    if not item['priority'].lower() in filter_priority.lower():
+                        show = 0
+
+            if show:
+                if filter_contextprojects_string:
+                    filter_contextprojects = re.split(',\s*|;\s*|\s+', filter_contextprojects_string)
+                    item_contexts = re.findall( '(@\w+)', item['text'])
+                    item_projects = re.findall( '(\+\w+)', item['text'])
+
+
+                    if show:
+                        anymatch = 0
+                        item_contextprojects = item_contexts + item_projects
+                        for item_contextproject in item_contextprojects:
+                            if item_contextproject in filter_contextprojects:
+                                anymatch = 1
+                                break
+                        if not anymatch:
+                            print('tp235nl03', filter_contextprojects)
+                            if '-+' in  filter_contextprojects:
+                                print('tp235nk58')
+                                if not item_projects:
+                                    anymatch = 1
+                            if '-@' in  filter_contextprojects:
+                                if not item_contexts:
+                                    anymatch = 1
+
+                        show = anymatch
+
+            if show:
                 if previous_due != item['due']:
                     main_text = main_text + '\n'
                     previous_due = item['due']
@@ -507,7 +558,7 @@ def main_filter():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
-def main_refresh():
+def xxmain_refresh():
 
     global items
 
@@ -529,54 +580,6 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
-def main_search( direction='forward' ):
-
-    if search_filter_var.get():
-        main_filter()
-        return
-    
-    pos = main_text_widget.index(tk.INSERT)    
-    if not pos > "":
-        pos = "1.0"
-
-    if 'found' in main_text_widget.tag_names():
-        if direction == 'reverse':
-            if pos == "1.0":
-                pos = tk.END
-            else:
-                pos = pos + " - 1 char"
-        else:
-            if pos == tk.END:
-                pos = "1.0"
-            else:
-                pos = pos + " + 1 char"
-
-        main_text_widget.mark_set(tk.INSERT, pos)
-
-    main_text_widget.tag_delete('found')
-    main_text_widget.tag_config('found', background='yellow')
-    searchstring = search_var.get()
-    if direction == 'reverse':
-        pos = main_text_widget.search(searchstring, pos, stopindex='1.0', backwards=True, nocase=True,  )
-    else:
-        pos = main_text_widget.search(searchstring, pos, stopindex=tk.END, nocase=True,  )
-
-    if pos == "":
-        pos = main_text_widget.search(searchstring, "1.0", stopindex=tk.END, nocase=True )
-
-    if pos:
-        main_text_widget.tag_add('found', pos, '%s+%dc' % (pos, len(searchstring)))
-        main_text_widget.focus_set()
-        main_text_widget.mark_set(tk.INSERT, pos)
-        main_text_widget.see(pos)
-
-def main_return_key( direction='forward' ):
-
-    if 'found' in main_text_widget.tag_names():
-        main_search( direction )
-
-    return "break"
-
 todo_txt_file, backup_path = file_get_paths()
 
 # some utility variables
@@ -584,108 +587,121 @@ todo_txt_file, backup_path = file_get_paths()
 letters = [''] + [ chr(chr_num) for chr_num in range(65,91) ]
 date_iso_pattern = '\d{4}-\d\d-\d\d'
 
-root = tk.Tk()
-root.title('Tougshore To Do List')
-font=('Calibri 35')
+if __name__ == "__main__":
 
-# Set up frames
-main_frame = tk.Frame( root )
-main_frame.pack( expand=1, fill="both" )
+    root = tk.Tk()
+    root.title('Tougshore To Do List')
+    font=('Calibri 35')
 
-message_frame = tk.Frame( root )
-message_frame.pack()
+    # Set up frames
+    main_frame = tk.Frame( root )
+    main_frame.pack( expand=1, fill="both" )
 
-edit_frame = tk.Frame( root )
-edit_frame.pack()
+    message_frame = tk.Frame( root )
+    message_frame.pack()
 
-search_frame = tk.Frame( root )
-search_frame.pack()
+    edit_frame = tk.Frame( root )
+    edit_frame.pack()
 
-main_text_widget = tk.Text( main_frame,  width=400, undo=True )
-main_text_widget.pack(pady=20, expand='yes')
-main_text_widget.bind('<KeyPress>', lambda e: main_ignore_keys(e))
-main_text_widget.unbind('<Control-d')
-main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
-main_text_widget.bind('<Return>', lambda x: main_return_key())
-main_text_widget.bind('<Control-Return>', lambda x: main_return_key('reverse'))
-main_text_widget.bind('<Control-e>', lambda x: item_edit())
+    search_frame = tk.Frame( root )
+    search_frame.pack()
 
-message_var = tk.StringVar()
-message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
-message_entry.pack(side="right")
-message_entry.pack_forget()
+    main_text_widget = tk.Text( main_frame,  width=400, undo=True )
+    main_text_widget.pack(pady=20, expand='yes')
+    main_text_widget.bind('<KeyPress>', lambda e: main_ignore_keys(e))
+    main_text_widget.unbind('<Control-d')
+    main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
+    main_text_widget.bind('<Control-e>', lambda x: item_edit())
 
-edit_entry_label = tk.Label( edit_frame, text='entry' )
-edit_entry_label.pack(side="left")
-edit_entry_var = tk.StringVar()
-edit_entry = tk.Entry( edit_frame, textvariable=edit_entry_var, width=40 )
-edit_entry.pack( side='left' )
-edit_entry.bind('<Return>', lambda x: item_add_update())
+    message_var = tk.StringVar()
+    message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
+    message_entry.pack(side="right")
+    message_entry.pack_forget()
 
-edit_priority_label = tk.Label( edit_frame, text='priority' )
-edit_priority_label.pack( side='left' )
-edit_priority_var = tk.StringVar()
-edit_priority = tk.Entry( edit_frame, textvariable=edit_priority_var, width=2 )
-edit_priority.pack( side='left' )
-edit_priority.bind('<KeyPress>', lambda e: edit_set_priority(e))
+    edit_entry_label = tk.Label( edit_frame, text='entry' )
+    edit_entry_label.pack(side="left")
+    edit_entry_var = tk.StringVar()
+    edit_entry = tk.Entry( edit_frame, textvariable=edit_entry_var, width=40 )
+    edit_entry.pack( side='left' )
+    edit_entry.bind('<Return>', lambda x: item_add_update())
 
-edit_due_label = tk.Label( edit_frame, text='due' )
-edit_due_label.pack( side='left' )
-edit_due_var = tk.StringVar()
-edit_due = tk.Entry( edit_frame, textvariable=edit_due_var )
-edit_due.pack( side='left' )
-edit_due.bind('<Return>', lambda x: item_add_update())
+    edit_priority_label = tk.Label( edit_frame, text='priority' )
+    edit_priority_label.pack( side='left' )
+    edit_priority_var = tk.StringVar()
+    edit_priority = tk.Entry( edit_frame, textvariable=edit_priority_var, width=2 )
+    edit_priority.pack( side='left' )
+    edit_priority.bind('<KeyPress>', lambda e: edit_set_priority(e))
 
-edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
-edit_iscomplete_label.pack( side='left' )
-edit_iscomplete_var = tk.StringVar()
-edit_iscomplete = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var, onvalue='x', offvalue='')
-edit_iscomplete.pack( side='left' )
+    edit_due_label = tk.Label( edit_frame, text='due' )
+    edit_due_label.pack( side='left' )
+    edit_due_var = tk.StringVar()
+    edit_due = tk.Entry( edit_frame, textvariable=edit_due_var )
+    edit_due.pack( side='left' )
+    edit_due.bind('<Return>', lambda x: item_add_update())
 
-edit_completiondate_label = tk.Label( edit_frame, text='completion date' )
-edit_completiondate_label.pack( side='left' )
-edit_completiondate_var = tk.StringVar()
-edit_completiondate = tk.Entry( edit_frame, textvariable=edit_completiondate_var )
-edit_completiondate.pack( side='left' )
-edit_completiondate_label.pack_forget()
-edit_completiondate.pack_forget()
+    edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
+    edit_iscomplete_label.pack( side='left' )
+    edit_iscomplete_var = tk.StringVar()
+    edit_iscomplete = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var, onvalue='x', offvalue='')
+    edit_iscomplete.pack( side='left' )
 
-edit_creationdate_var = tk.StringVar()
+    edit_completiondate_label = tk.Label( edit_frame, text='completion date' )
+    edit_completiondate_label.pack( side='left' )
+    edit_completiondate_var = tk.StringVar()
+    edit_completiondate = tk.Entry( edit_frame, textvariable=edit_completiondate_var )
+    edit_completiondate.pack( side='left' )
+    edit_completiondate_label.pack_forget()
+    edit_completiondate.pack_forget()
 
-edit_linetext_var = tk.StringVar()
+    edit_creationdate_var = tk.StringVar()
 
-edit_apply = tk.Button( edit_frame, text='apply', command=item_add_update )
-edit_apply.pack(side='left')
-edit_apply.bind('<Return>', lambda x: item_add_update())
+    edit_linetext_var = tk.StringVar()
 
-search_var = tk.StringVar()
-search_entry = tk.Entry(search_frame, textvariable=search_var)
-search_entry.pack(side="right")
-search_entry_label = tk.Label(search_frame,text="search")
-search_entry_label.pack(side="right")
-search_entry.bind('<Return>', lambda x: main_search())
+    edit_apply = tk.Button( edit_frame, text='apply', command=item_add_update )
+    edit_apply.pack(side='left')
+    edit_apply.bind('<Return>', lambda x: item_add_update())
 
-search_filter_var = tk.IntVar()
-search_filter = tk.Checkbutton(search_frame, variable=search_filter_var, text="filter")
-search_filter.pack(side="right")
-search_filter.config(takefocus=True)
+    filter_text_label = tk.Label(search_frame,text="filter text")
+    filter_text_label.pack(side="left")
+    filter_text_var = tk.StringVar()
+    filter_text = tk.Entry(search_frame, textvariable=filter_text_var)
+    filter_text.pack(side="left")
+    filter_text.bind('<Return>', lambda x: main_refresh())
+    filter_text.bind('<KeyRelease>', lambda x: main_refresh())
 
+    filter_priority_label = tk.Label(search_frame,text="filter priority")
+    filter_priority_label.pack(side="left")
+    filter_priority_var = tk.StringVar()
+    filter_priority = tk.Entry(search_frame, textvariable=filter_priority_var, width=5)
+    filter_priority.pack(side="left")
+    filter_priority.bind('<Return>', lambda x: main_refresh())
+    filter_priority.bind('<KeyRelease>', lambda x: main_refresh())
 
-root.bind('<Control-s>', lambda x: file_save())
-root.bind('<Control-r>', lambda x: main_refresh())
-root.bind('<Control-n>', lambda x: edit_entry.focus_set())
-root.bind('<Control-x>', lambda x: item_set_complete())
-root.unbind('<Control-d')
-root.bind('<Control-f>', lambda x: search_entry.focus_set())
-root.bind('<Control-e>', lambda x: edit_focus())
+    filter_contextprojects_label = tk.Label(search_frame,text="filter contexts & projects")
+    filter_contextprojects_label.pack(side="left")
+    filter_contextprojects_var = tk.StringVar()
+    filter_contextprojects = tk.Entry(search_frame, textvariable=filter_contextprojects_var, width=5)
+    filter_contextprojects.pack(side="left")
+    filter_contextprojects.bind('<Return>', lambda x: main_refresh())
+    filter_contextprojects.bind('<KeyRelease>', lambda x: main_refresh())
 
-items = []
+    filter_clear_button = tk.Button( search_frame, text='Clear Filters', command=filter_clear )
+    filter_clear_button.pack(side="left")
 
-file_get_items()
+    root.bind('<Control-s>', lambda x: file_save())
+    root.bind('<Control-r>', lambda x: main_refresh())
+    root.bind('<Control-n>', lambda x: edit_entry.focus_set())
+    root.bind('<Control-x>', lambda x: item_set_complete())
+    root.unbind('<Control-d')
+    root.bind('<Control-f>', lambda x: filter_text.focus_set())
+    root.bind('<Control-e>', lambda x: edit_focus())
 
-main_refresh()
+    items = []
 
-main_text_widget.focus_set()
+    file_get_items()
 
+    main_refresh()
 
-root.mainloop()
+    main_text_widget.focus_set()
+
+    root.mainloop()
