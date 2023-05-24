@@ -517,7 +517,9 @@ def main_refresh():
                 if filter_contexts_projects_string:
                     #starting with 'test @one +two @three +three'
                     #item_context_projects should be [ '@one', '+two' '@three', '+three' ]
-                    item_contexts_projects = re.findall( '(?:@|\+)\w+', item['text'] )
+                    item_contexts = re.findall( '(?:@)\w+', item['text'] )
+                    item_projects = re.findall( '(?:\+)\w+', item['text'] )
+                    item_contexts_projects = item_contexts + item_projects
 
                     #starting with 'test @one, +two; three'
                     #filter_context_projects should be [ 'test', @one', '+two', 'three' ]
@@ -527,6 +529,8 @@ def main_refresh():
                     #filter_contexts will be [ '@test', '@one', '@three' ] and filter_projects will be [ '+test', '+two', '+three' ]
                     filter_projects = []
                     filter_contexts = []
+                    match_no_context = False
+                    match_no_project = False
                     for filter_part in filter_contexts_projects:
                         if filter_part[0:1] == '@':
                             filter_contexts.append( filter_part )
@@ -535,14 +539,27 @@ def main_refresh():
                         elif re.match('[A-Za-z]', filter_part[0:1]):
                             filter_contexts.append( '@' + filter_part )
                             filter_projects.append( '+' + filter_part )
-
+                        elif filter_part == '-@':
+                            match_no_context = True
+                        elif filter_part == '-+':
+                            match_no_project = True
+                        
                     anymatch = 0
-                    for filter_context in filter_contexts:
-                        if filter_context in item_contexts_projects:
-                            anymatch = 1    
-                    for filter_project in filter_projects:
-                        if filter_project in item_contexts_projects:
-                            anymatch = 1    
+                    
+                    if anymatch == 0:   # I just do this first one to keep all of the tests in line
+                        if match_no_context and not item_contexts:
+                            anymatch = 1
+                    if anymatch == 0:
+                        if match_no_project and not item_projects:
+                            anymatch = 1                    
+                    if anymatch == 0:
+                        for filter_context in filter_contexts:
+                            if filter_context in item_contexts_projects:
+                                anymatch = 1    
+                    if anymatch == 0:
+                        for filter_project in filter_projects:
+                            if filter_project in item_contexts_projects:
+                                anymatch = 1    
 
                     show = anymatch
 
