@@ -7,13 +7,6 @@ import configparser
 from tkcalendar import DateEntry
 from tkinter import filedialog as fd, messagebox
 
-def edit_focus():
-    widget = root.focus_get()
-    if widget == main_text_widget:
-        edit_entry.focus_set()
-    else:
-        main_text_widget.focus_set()
-
 
 def edit_set_priority(e):
 
@@ -33,6 +26,7 @@ def edit_set_priority(e):
 # adds an item from the edit widgets. Deletes it first if the item already exists
 def item_add_update():
 
+    print('tp235o646')
     global items
 
     entry = edit_entry.get().strip()
@@ -69,25 +63,21 @@ def item_add_update():
 
         item['text'] = edit_entry_var.get()
 
-        print ('tp235nb04', item )
-
         for i, find_item in enumerate( items ):
             if find_item['line_text'] == edit_linetext_var.get():
                 deleted_item = items.pop( i )
                 break
 
-        print ('tp235nb05', item )
         item['line_text'] = item_to_text( item )
-        print ('tp235nb06', item )
 
         items.append(item)
         
         items_sort()
         file_save()
         main_refresh()
+        main_text_widget.focus_set()
 
         edit_linetext_var.set('')
-        edit_entry_var.set('')
 
 # deletes the first time who's item['text'] matches the text of the current line
 def item_delete_by_text():
@@ -192,7 +182,6 @@ def item_edit():
     edit_entry_var.set( edited_item['text'] )
 
     edit_linetext_var.set( line_text )
-    print('tp235na52', edit_linetext_var.get())
 
     edit_entry.focus_set()
 
@@ -469,15 +458,42 @@ def filter_clear():
     filter_contextprojects_var.set('')
     main_refresh()
 
-def main_ignore_keys( e ):
+def main_handle_keys( e ):
 
     if e.keysym == 'Tab':
         if e.state & 0x1: #shift key pressed
-            filter_text.focus_set()
+            e.widget.tk_focusPrev().focus()
+#            filter_text.focus_set()
         else:
-            edit_entry.focus_set()
+            e.widget.tk_focusNext().focus()
+#            edit_entry.focus_set()
         return "break"
-        
+
+    if e.state & 0x4: #control key pressed
+        if e.keysym == 'c':
+            item_set_complete()
+            return "break"
+        if e.keysym == 'd':
+            item_edit()
+            edit_due.focus_set()
+            edit_due.select_range( 0, tk.END )
+            return "break"
+        if e.keysym == 'e':
+            item_edit()
+            return "break"
+        if e.keysym == 'p':
+            item_edit()
+            edit_priority.focus_set()
+            edit_priority.select_range( 0, tk.END )
+            return "break"
+        if e.keysym == 'x':
+            item_delete_by_text()
+            return "break"
+
+    # main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
+    # main_text_widget.bind('<Control-e>', lambda x: item_edit())
+
+
     good_keys = [
         'Up',
         'Down',
@@ -485,7 +501,6 @@ def main_ignore_keys( e ):
         'Right',
     ]
     good_keys = good_keys + [ 'F{}'.format( n ) for n in range(1,25) ] # allowing for some unusual situation where there are more than 12 F keys
-
 
     if not e.state & 0x4: #control key pressed
         if not e.keysym in good_keys:
@@ -536,9 +551,7 @@ def main_refresh():
                                 anymatch = 1
                                 break
                         if not anymatch:
-                            print('tp235nl03', filter_contextprojects)
                             if '-+' in  filter_contextprojects:
-                                print('tp235nk58')
                                 if not item_projects:
                                     anymatch = 1
                             if '-@' in  filter_contextprojects:
@@ -608,10 +621,11 @@ if __name__ == "__main__":
 
     main_text_widget = tk.Text( main_frame,  width=400, undo=True )
     main_text_widget.pack(pady=20, expand='yes')
-    main_text_widget.bind('<KeyPress>', lambda e: main_ignore_keys(e))
+    main_text_widget.bind('<KeyPress>', lambda e: main_handle_keys(e))
     main_text_widget.unbind('<Control-d')
-    main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
-    main_text_widget.bind('<Control-e>', lambda x: item_edit())
+    # main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
+    # main_text_widget.bind('<Control-e>', lambda x: item_edit())
+
 
     message_var = tk.StringVar()
     message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
@@ -688,13 +702,12 @@ if __name__ == "__main__":
     filter_clear_button = tk.Button( search_frame, text='Clear Filters', command=filter_clear )
     filter_clear_button.pack(side="left")
 
-    root.bind('<Control-s>', lambda x: file_save())
-    root.bind('<Control-r>', lambda x: main_refresh())
-    root.bind('<Control-n>', lambda x: edit_entry.focus_set())
-    root.bind('<Control-x>', lambda x: item_set_complete())
+    root.bind('<Control-s>', lambda x: file_save() )
+    root.bind('<Control-r>', lambda x: main_refresh() )
+    root.bind('<Control-n>', lambda x: edit_entry.focus_set() )
     root.unbind('<Control-d')
-    root.bind('<Control-f>', lambda x: filter_text.focus_set())
-    root.bind('<Control-e>', lambda x: edit_focus())
+    root.bind('<Control-f>', lambda x: filter_text.focus_set() )
+    root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
 
     items = []
 
