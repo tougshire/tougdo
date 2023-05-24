@@ -28,7 +28,7 @@ def item_add_update():
 
     global items
 
-    entry = edit_entry.get().strip()
+    entry = edit_entry_var.get().strip()
 
     if entry:
 
@@ -44,21 +44,21 @@ def item_add_update():
             item['completion_date'] = ''
 
         item['priority'] = ''
-        priority_var = edit_priority_var.get()
-        if priority_var > '' and priority_var in letters:
-            item['priority'] = priority_var
+        priority = edit_priority_var.get()
+        if priority > '' and priority in letters:
+            item['priority'] = priority
 
         item['creation_date'] = ''
-        creationdate_var = edit_creationdate_var.get()
-        iso_creationdate_var = get_iso_date( creationdate_var )
-        if re.match( date_iso_pattern, iso_creationdate_var):
-            item['creation_date'] = iso_creationdate_var
+        creationdate = edit_creationdate_var.get()
+        iso_creationdate = get_iso_date( creationdate )
+        if re.match( date_iso_pattern, iso_creationdate):
+            item['creation_date'] = iso_creationdate
 
         item['due'] = ''
-        due_var = edit_due_var.get()    
-        iso_due_var = get_iso_date( due_var )
-        if re.match( date_iso_pattern, iso_due_var):
-            item['due'] = iso_due_var
+        due = edit_due_var.get()    
+        iso_due = get_iso_date( due )
+        if re.match( date_iso_pattern, iso_due):
+            item['due'] = iso_due
 
         item['text'] = edit_entry_var.get()
 
@@ -81,7 +81,7 @@ def item_add_update():
 
 def item_new():
 
-    edit_entry.focus_set()
+    edit_entry_widget.focus_set()
     edit_entry_var.set('')
     edit_linetext_var.set('')
 
@@ -162,7 +162,7 @@ def item_edit( delete='' ):
 
         edit_linetext_var.set( line_text )
 
-        edit_entry.focus_set()
+        edit_entry_widget.focus_set()
 
         file_save()
 
@@ -418,10 +418,10 @@ def main_handle_keys( e ):
     if e.keysym == 'Tab':
         if e.state & 0x1: #shift key pressed
             e.widget.tk_focusPrev().focus()
-#            filter_text.focus_set()
+#            filter_text_widget.focus_set()
         else:
             e.widget.tk_focusNext().focus()
-#            edit_entry.focus_set()
+#            edit_entry_widget.focus_set()
         return "break"
 
     if e.state & 0x4: #control key pressed
@@ -430,16 +430,16 @@ def main_handle_keys( e ):
             return "break"
         if e.keysym == 'd':
             item_edit()
-            edit_due.focus_set()
-            edit_due.select_range( 0, tk.END )
+            edit_due_widget.focus_set()
+            edit_due_widget.select_range( 0, tk.END )
             return "break"
         if e.keysym == 'e':
             item_edit()
             return "break"
         if e.keysym == 'p':
             item_edit()
-            edit_priority.focus_set()
-            edit_priority.select_range( 0, tk.END )
+            edit_priority_widget.focus_set()
+            edit_priority_widget.select_range( 0, tk.END )
             return "break"
         if e.keysym == 'x':
             item_edit('DELETE')
@@ -487,7 +487,7 @@ def main_refresh():
             show = 1
 
             if show:
-                if filter_text:
+                if filter_text_var.get():
                     if not filter_text.lower() in item['text'].lower():
                         show = 0
 
@@ -498,27 +498,37 @@ def main_refresh():
 
             if show:
                 if filter_contextprojects_string:
-                    filter_contextprojects = re.split(',\s*|;\s*|\s+', filter_contextprojects_string)
-                    item_contexts = re.findall( '(@\w+)', item['text'])
-                    item_projects = re.findall( '(\+\w+)', item['text'])
+                    #starting with 'test @one +two @three +three'
+                    #item_context_projects should be [ '@one', '+two' '@three', '+three' ]
+                    item_contexts_projects = re.findall( '(?:@|\+)\w+', item['text'] )
+
+                    #starting with 'test @one, +two; three'
+                    #filter_context_projects should be [ 'test', @one', '+two', 'three' ]
+                    filter_contexts_projects = re.split('\s*,\s*|\s*;\s*|\s+', filter_contextprojects_string)
 
 
-                    if show:
-                        anymatch = 0
-                        item_contextprojects = item_contexts + item_projects
-                        for item_contextproject in item_contextprojects:
-                            if item_contextproject in filter_contextprojects:
-                                anymatch = 1
-                                break
-                        if not anymatch:
-                            if '-+' in  filter_contextprojects:
-                                if not item_projects:
-                                    anymatch = 1
-                            if '-@' in  filter_contextprojects:
-                                if not item_contexts:
-                                    anymatch = 1
+                    #starting with [ 'test', '@one', '+two', 'three' ]
+                    #filter_contexts will be [ '@test', '@one', '@three' ] and filter_projects will be [ '+test', '+two', '+three' ]
+                    filter_projects = []
+                    filter_contexts = []
+                    for filter_part in filter_contexts_projects:
+                        if filter_part[0:1] == '@':
+                            filter_contexts.append( filter_part )
+                        if filter_part[0:1] == '+':
+                            filter_projects.append( filter_part )
+                        elif re.match('[A-Za-z]', filter_part[0:1]):
+                            filter_contexts.append( '@' + filter_part )
+                            filter_projects.append( '+' + filter_part )
 
-                        show = anymatch
+                    anymatch = 0
+                    for filter_context in filter_contexts:
+                        if filter_context in item_contexts_projects:
+                            anymatch = 1    
+                    for filter_project in filter_projects:
+                        if filter_project in item_contexts_projects:
+                            anymatch = 1    
+
+                    show = anymatch
 
             if show:
                 if previous_due != item['due']:
@@ -566,7 +576,6 @@ if __name__ == "__main__":
     # main_text_widget.bind('<Control-d>', lambda x: item_delete_by_text())
     # main_text_widget.bind('<Control-e>', lambda x: item_edit())
 
-
     message_var = tk.StringVar()
     message_entry = tk.Entry(message_frame, width=80, textvariable=message_var)
     message_entry.pack(side="right")
@@ -575,37 +584,31 @@ if __name__ == "__main__":
     edit_entry_label = tk.Label( edit_frame, text='entry' )
     edit_entry_label.pack(side="left")
     edit_entry_var = tk.StringVar()
-    edit_entry = tk.Entry( edit_frame, textvariable=edit_entry_var, width=40 )
-    edit_entry.pack( side='left' )
-    edit_entry.bind('<Return>', lambda x: item_add_update())
+    edit_entry_widget = tk.Entry( edit_frame, textvariable=edit_entry_var, width=40 )
+    edit_entry_widget.pack( side='left' )
+    edit_entry_widget.bind('<Return>', lambda x: item_add_update())
 
     edit_priority_label = tk.Label( edit_frame, text='priority' )
     edit_priority_label.pack( side='left' )
     edit_priority_var = tk.StringVar()
-    edit_priority = tk.Entry( edit_frame, textvariable=edit_priority_var, width=2 )
-    edit_priority.pack( side='left' )
-    edit_priority.bind('<KeyPress>', lambda e: edit_set_priority(e))
+    edit_priority_widget = tk.Entry( edit_frame, textvariable=edit_priority_var, width=2 )
+    edit_priority_widget.pack( side='left' )
+    edit_priority_widget.bind('<KeyPress>', lambda e: edit_set_priority(e))
 
     edit_due_label = tk.Label( edit_frame, text='due' )
     edit_due_label.pack( side='left' )
     edit_due_var = tk.StringVar()
-    edit_due = tk.Entry( edit_frame, textvariable=edit_due_var )
-    edit_due.pack( side='left' )
-    edit_due.bind('<Return>', lambda x: item_add_update())
+    edit_due_widget = tk.Entry( edit_frame, textvariable=edit_due_var )
+    edit_due_widget.pack( side='left' )
+    edit_due_widget.bind('<Return>', lambda x: item_add_update())
 
     edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
     edit_iscomplete_label.pack( side='left' )
     edit_iscomplete_var = tk.StringVar()
-    edit_iscomplete = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var, onvalue='x', offvalue='')
-    edit_iscomplete.pack( side='left' )
+    edit_iscomplete_widget = tk.Checkbutton( edit_frame, variable=edit_iscomplete_var, onvalue='x', offvalue='')
+    edit_iscomplete_widget.pack( side='left' )
 
-    edit_completiondate_label = tk.Label( edit_frame, text='completion date' )
-    edit_completiondate_label.pack( side='left' )
     edit_completiondate_var = tk.StringVar()
-    edit_completiondate = tk.Entry( edit_frame, textvariable=edit_completiondate_var )
-    edit_completiondate.pack( side='left' )
-    edit_completiondate_label.pack_forget()
-    edit_completiondate.pack_forget()
 
     edit_creationdate_var = tk.StringVar()
 
@@ -618,18 +621,18 @@ if __name__ == "__main__":
     filter_text_label = tk.Label(search_frame,text="filter text")
     filter_text_label.pack(side="left")
     filter_text_var = tk.StringVar()
-    filter_text = tk.Entry(search_frame, textvariable=filter_text_var)
-    filter_text.pack(side="left")
-    filter_text.bind('<Return>', lambda x: main_refresh())
-    filter_text.bind('<KeyRelease>', lambda x: main_refresh())
+    filter_text_widget = tk.Entry(search_frame, textvariable=filter_text_var)
+    filter_text_widget.pack(side="left")
+    filter_text_widget.bind('<Return>', lambda x: main_refresh())
+    filter_text_widget.bind('<KeyRelease>', lambda x: main_refresh())
 
     filter_priority_label = tk.Label(search_frame,text="filter priority")
     filter_priority_label.pack(side="left")
     filter_priority_var = tk.StringVar()
-    filter_priority = tk.Entry(search_frame, textvariable=filter_priority_var, width=5)
-    filter_priority.pack(side="left")
-    filter_priority.bind('<Return>', lambda x: main_refresh())
-    filter_priority.bind('<KeyRelease>', lambda x: main_refresh())
+    filter_priority_widget = tk.Entry(search_frame, textvariable=filter_priority_var, width=5)
+    filter_priority_widget.pack(side="left")
+    filter_priority_widget.bind('<Return>', lambda x: main_refresh())
+    filter_priority_widget.bind('<KeyRelease>', lambda x: main_refresh())
 
     filter_contextprojects_label = tk.Label(search_frame,text="filter contexts & projects")
     filter_contextprojects_label.pack(side="left")
@@ -646,7 +649,7 @@ if __name__ == "__main__":
     root.bind('<Control-r>', lambda x: main_refresh() )
     root.bind('<Control-n>', lambda x: item_new() )
     root.unbind('<Control-d')
-    root.bind('<Control-f>', lambda x: filter_text.focus_set() )
+    root.bind('<Control-f>', lambda x: filter_text_widget.focus_set() )
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
 
     items = []
