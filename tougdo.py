@@ -72,14 +72,19 @@ def item_add_update():
         item['line_text'] = item_to_text( item )
 
         items.append(item)
-        
-        items_sort()
-        file_save()
-        main_refresh()
-        main_find_item( item['line_text'] )
-        main_text_widget.focus_set()
 
         edit_linetext_var.set('')
+        edit_entry_var.set('')
+        edit_iscomplete_var.set('')
+
+        items_sort()
+        file_save()
+
+        main_refresh()
+        main_find_item( item['line_text'] )
+
+        main_text_widget.focus_set()
+
 
 def item_new():
 
@@ -87,21 +92,6 @@ def item_new():
     edit_entry_var.set('')
     edit_linetext_var.set('')
 
-def item_set_complete():
-
-    global items
-    
-    line_text, line_start, line_end = get_line_text_from_main()
-
-    for i, item in enumerate( items ):
-        if item['line_text'] == line_text:
-            items[i]['is_completed'] = 'x' if items[i]['is_completed'] == '' else ''
-            items[i]['line_text'] = item_to_text(item)
-            break
-
-    items_sort()
-    file_save()
-    main_refresh()
 
 def item_to_text( item ):
 
@@ -453,6 +443,7 @@ def main_handle_keys( e ):
             return "break"
         if e.keysym == 'e':
             item_edit()
+            edit_entry_widget.focus_set()
             return "break"
         if e.keysym == 'p':
             item_edit()
@@ -460,7 +451,7 @@ def main_handle_keys( e ):
             edit_priority_widget.select_range( 0, tk.END )
             return "break"
         if e.keysym == 'x':
-            item_edit('DELETE')
+            item_set_complete()
             return "break"
 
 
@@ -674,7 +665,7 @@ if __name__ == "__main__":
     filter_contexts_projects_label = tk.Label(search_frame,text="filter contexts & projects")
     filter_contexts_projects_label.pack(side="left")
     filter_contexts_projects_var = tk.StringVar()
-    filter_contexts_projects = tk.Entry(search_frame, textvariable=filter_contexts_projects_var, width=5)
+    filter_contexts_projects = tk.Entry(search_frame, textvariable=filter_contexts_projects_var, width=15)
     filter_contexts_projects.pack(side="left")
     filter_contexts_projects.bind('<Return>', lambda x: main_refresh())
     filter_contexts_projects.bind('<KeyRelease>', lambda x: main_refresh())
