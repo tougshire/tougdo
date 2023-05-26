@@ -501,8 +501,17 @@ def main_refresh():
 
             if show:
                 if filter_priority:
-                    if not item['priority'].lower() in filter_priority.lower():
+                    filter_priority = filter_priority.lower()
+                    item['priority'] = item['priority'].lower()
+                    if not item['priority'] in filter_priority:
                         show = 0
+                    if show == 0:
+                        matches = re.findall( '([a-z]{1})\s*\.+\s*([a-z]{1})', filter_priority )
+                        for match in matches:
+                            for p in range( ord( match[ 0 ] ) + 1, ord( match[ 1 ] )):
+                                if item['priority'] == chr(p):
+                                    show = 1
+                                    break;
 
             if show:
                 if filter_contexts_projects_string:
