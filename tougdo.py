@@ -376,9 +376,11 @@ def file_get_paths():
     try:
         todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
     except KeyError:
+        message_var.set('No todo.txt location configured.  Using home path')
         todo_txt_file = Path.home() / 'todo.txt'
 
-    f = open(todo_txt_file, 'r')
+    f = open(todo_txt_file, 'a+')
+    f.seek(0)
 
     try:
         backup_path = conf_parser['todo.txt']['backup_path']
@@ -433,9 +435,6 @@ def main_handle_keys( e ):
         return "break"
 
     if e.state & 0x4: #control key pressed
-        if e.keysym == 'c':
-            item_set_complete()
-            return "break"
         if e.keysym == 'd':
             item_edit()
             edit_due_widget.focus_set()
@@ -570,7 +569,7 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
-todo_txt_file, backup_path = file_get_paths()
+
 
 # some utility variables
 # produces a list of one empty string followed by each letter surrounded by parentheses
@@ -578,6 +577,7 @@ letters = [''] + [ chr(chr_num) for chr_num in range(65,91) ]
 date_iso_pattern = '\d{4}-\d\d-\d\d'
 
 if __name__ == "__main__":
+
 
     root = tk.Tk()
     root.title('Tougshore To Do List')
@@ -684,6 +684,8 @@ if __name__ == "__main__":
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
 
     items = []
+
+    todo_txt_file, backup_path = file_get_paths()
 
     file_get_items()
 
