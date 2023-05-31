@@ -4,7 +4,6 @@ import re
 import os
 from pathlib import Path, PurePath
 import configparser
-from tkcalendar import DateEntry
 from tkinter import filedialog, messagebox
 
 def edit_set_priority(e):
@@ -631,15 +630,12 @@ class Config():
 
         return self.config['files']['backup_dir']
     
-
-
 # some utility variables
 # produces a list of one empty string followed by each letter surrounded by parentheses
 letters = [''] + [ chr(chr_num) for chr_num in range(65,91) ]
 date_iso_pattern = '\d{4}-\d\d-\d\d'
 
 if __name__ == "__main__":
-
 
     root = tk.Tk()
     root.title('Tougshore To Do List')
