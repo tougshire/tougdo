@@ -606,8 +606,10 @@ class Config():
         while not backup_dir_found:
 
             backup_folder = filedialog.askdirectory( title='Select backup Folder')
+            open( Path( backup_folder ) / 'temp.txt', 'w' )
+            backup_dir_found = True
             self.config.setdefault( 'files', {} )
-            self.config['files']['backup_dir'] = backup_folder
+            self.config['files']['backup_dir'] = str( PurePath( backup_folder ) )
             config_file = open( self.config_path, 'w' )
             self.config.write( config_file )
             config_file.close()
@@ -625,7 +627,7 @@ class Config():
             pass
 
         if not backup_found:
-            
+            print('tp235vj08')
             self.reset_backup()
 
         return self.config['files']['backup_dir']
