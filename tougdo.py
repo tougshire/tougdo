@@ -2,12 +2,10 @@ from datetime import date, datetime,timedelta
 import tkinter as tk
 import re
 import os
-from pathlib import Path, WindowsPath
+from pathlib import Path, PurePath
 import configparser
 from tkcalendar import DateEntry
-from tkinter import filedialog as fd, messagebox
-
-
+from tkinter import filedialog, messagebox
 
 def edit_set_priority(e):
 
@@ -345,7 +343,9 @@ def file_get_items():
 
     global items
 
-    f = open(todo_txt_file , "r")
+    print ('tp2305vf51')
+    f = open( config.get_todo() , "r" )
+    print ('tp2305vf52')
     data = f.read()
     f.close()
     file_items = data.split('\n')
@@ -361,36 +361,7 @@ def file_get_items():
 
     items = sorted( items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
 
-def file_get_paths():
-
-    config_files = [
-        Path.cwd() / 'config' / 'tougdo.conf',
-        Path.cwd() / 'config' / 'tougdo.config',
-        Path.home() / '.tougdo' / 'tougdo.conf',
-        Path.home() / '.tougdo' / 'tougdo.config',
-    ]
-
-    conf_parser = configparser.ConfigParser()
-    conf_parser.read(config_files)
-
-    try:
-        todo_txt_file = conf_parser['todo.txt']['todo.txt_file']
-    except KeyError:
-        message_var.set('No todo.txt location configured.  Using home path')
-        todo_txt_file = Path.home() / 'todo.txt'
-
-    f = open(todo_txt_file, 'a+')
-    f.seek(0)
-
-    try:
-        backup_path = conf_parser['todo.txt']['backup_path']
-    except KeyError:
-        backup_path = Path.home() 
-
-    f = open( Path(backup_path) / 'todo_backup_test', 'w')
-
-    return [ todo_txt_file, backup_path ]
-
+    
 def file_save():
 
     global items
@@ -400,22 +371,23 @@ def file_save():
     for item in items:
         main_text = main_text + item['line_text'] + '\n'
 
-    f = open( todo_txt_file , "w")
+    f = open( config.get_todo() , "w")
     f.write( main_text )
     f.close()
     for backnum in range(5,1,-1):
         older_backup_name = 'todo_back_{}.txt'.format( backnum )
         newer_backup_name = 'todo_back_{}.txt'.format( backnum - 1)
-        n = open(Path(backup_path) / newer_backup_name, 'a+')
+        n = open( Path( config.get_backup_path() ) / newer_backup_name, 'a+')
+
         n.seek(0)
         contents = n.read()
         n.close()
-        o = open(Path(backup_path) / older_backup_name, 'w')
+        o = open( Path( config.get_backup_path() ) / older_backup_name, 'w')
         o.write(contents)
         o.close()
     backup_name = 'todo_back_1.txt'    
-    b = open(Path(backup_path) / backup_name , "w")
-    b.write(main_text)
+    b = open( Path( config.get_backup_path() ) / backup_name , "w")
+    b.write( main_text )
     b.close()
 
 def filter_clear():
@@ -578,6 +550,87 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
+class Config():
+
+    def __init__( self ):
+
+        config_dir = Path.home() / '.tougdo' 
+        self.config_path = str(config_dir / 'tougdo.conf')
+
+        self.config = configparser.ConfigParser()
+
+        if not Path.exists( config_dir ):
+            Path.mkdir( config_dir )
+
+        config_file = open( self.config_path, 'a+')
+        config_file.close()
+        self.config.read( self.config_path )
+ 
+    def reset_todo( self ):
+
+        todo_found = False
+
+        while not todo_found:
+
+            todo_folder = filedialog.askdirectory( title='Select todo.txt Folder')
+            todo_found = True
+            self.config.setdefault( 'files', {} )
+            self.config['files']['todo.txt'] = str( PurePath( todo_folder ) / 'todo.txt' )
+            config_file = open( self.config_path, 'w' )
+            self.config.write( config_file )
+            config_file.close()
+
+    def get_todo( self ):
+
+        todo_found = False
+
+        try:
+            print ('tp2305vf53')
+            todo_txt = open( self.config['files']['todo.txt'], 'a+' )
+            print ('tp2305vf54')
+            todo_found = True            
+            todo_txt.close()
+
+        except ( KeyError, PermissionError ):
+            pass
+
+        if not todo_found:
+            
+            self.reset_todo()
+
+        return self.config['files']['todo.txt']
+
+    def reset_backup( self ):
+
+        backup_dir_found = False
+
+        while not backup_dir_found:
+
+            backup_folder = filedialog.askdirectory( title='Select backup Folder')
+            self.config.setdefault( 'files', {} )
+            self.config['files']['backup_dir'] = backup_folder
+            config_file = open( self.config_path, 'w' )
+            self.config.write( config_file )
+            config_file.close()
+
+    def get_backup_path( self ):
+
+        backup_found = False
+
+        try:
+
+            backup_dir_writeable = open( Path( self.config['files']['backup_dir'] ) / 'temp.txt', 'w' )
+            backup_found = True            
+
+        except ( KeyError, PermissionError ):
+            pass
+
+        if not backup_found:
+            
+            self.reset_backup()
+
+        return self.config['files']['backup_dir']
+    
 
 
 # some utility variables
@@ -694,7 +747,7 @@ if __name__ == "__main__":
 
     items = []
 
-    todo_txt_file, backup_path = file_get_paths()
+    config = Config()
 
     file_get_items()
 
