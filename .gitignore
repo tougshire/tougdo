@@ -131,7 +131,10 @@ dmypy.json
 # vi
 *.sw[op]
 config/tougdo.conf
-tougdo_235li51.py
+
+#my backup copies and experiments
+tougdo_*.py
 tougdo__235ld16.py
 tougdo_235mi06.py
 config_experiment.py
+tougdo_2361c06.py

@@ -21,67 +21,6 @@ def edit_set_priority(e):
     elif re.match('[a-z]',e.keysym[0:1]):
         return "break"
 
-# adds an item from the edit widgets. Deletes it first if the item already exists
-def item_add_update():
-
-    global items
-
-    entry = edit_entry_var.get().strip()
-
-    if entry:
-
-        item = {}
-
-        if edit_iscomplete_var.get() == 'x':
-
-            item['is_completed'] = 'x'
-            item['completion_date'] = date.today().isoformat()
-        
-        else:
-            item['is_completed'] = ''
-            item['completion_date'] = ''
-
-        item['priority'] = ''
-        priority = edit_priority_var.get()
-        if priority > '' and priority in letters:
-            item['priority'] = priority
-
-        item['creation_date'] = ''
-        creationdate = edit_creationdate_var.get()
-        iso_creationdate = get_iso_date( creationdate )
-        if re.match( date_iso_pattern, iso_creationdate):
-            item['creation_date'] = iso_creationdate
-
-        item['due'] = ''
-        due = edit_due_var.get().strip()
-        if due > '':
-            item['due'] = get_iso_date( due )
-            if item['due'] == '':
-                messagebox.showerror( 'Date Error', 'There was a problem with the due date.  The item has been added without a due date')
-
-        item['text'] = edit_entry_var.get()
-
-        for i, find_item in enumerate( items ):
-            if find_item['line_text'] == edit_linetext_var.get():
-                deleted_item = items.pop( i )
-                break
-
-        item['line_text'] = item_to_text( item )
-
-        items.append(item)
-
-        edit_linetext_var.set('')
-        edit_entry_var.set('')
-        edit_iscomplete_var.set('')
-
-        items_sort()
-        file_save()
-
-        main_refresh()
-        main_find_item( item['line_text'] )
-
-        main_text_widget.focus_set()
-
 
 def item_new():
 
@@ -125,40 +64,6 @@ def item_to_text( item ):
 
     return working_text
 
-def item_edit( delete='' ):
-    
-    global items
-
-    line_text, line_start, line_end = get_line_text_from_main()
-
-    #find the item who's line_text matches the line in the main widget at the cursor
-    for i, item in enumerate( items ):
-        if item['line_text'] == line_text:
-            if delete == 'DELETE':
-                found_item = items.pop(i)
-                main_refresh()
-            else:
-                found_item = items[i]
-            break
-
-    try:
-        edit_iscomplete_var.set( found_item['is_completed'] )
-        edit_completiondate_var.set( found_item['completion_date'] )
-        edit_priority_var.set( found_item['priority'] )
-        edit_creationdate_var.set( found_item['creation_date'] )
-        edit_due_var.set( found_item['due'] )
-        edit_entry_var.set( found_item['text'] )
-
-        edit_linetext_var.set( line_text )
-
-        edit_entry_widget.focus_set()
-
-        file_save()
-
-    except UnboundLocalError:
-        messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
-
-    return "break"
 
 def item_set_complete():
 
@@ -337,57 +242,8 @@ def parse_item( item ):
         parsed_item['text'] = item_text.strip()
 
     return parsed_item
-
-def file_get_items():
-
-    global items
-
-    print ('tp2305vf51')
-    f = open( config.get_todo() , "r" )
-    print ('tp2305vf52')
-    data = f.read()
-    f.close()
-    file_items = data.split('\n')
-    items=[]
-
-    for file_item in file_items:
-
-        if file_item:
-            item = parse_item( file_item )
-            item['line_text'] = item_to_text( item )
     
-            items.append( item )
 
-    items = sorted( items, key=lambda i: ( i['is_completed'], i['due'], i['priority'] ) )
-
-    
-def file_save():
-
-    global items
-
-    main_text = ''
-
-    for item in items:
-        main_text = main_text + item['line_text'] + '\n'
-
-    f = open( config.get_todo() , "w")
-    f.write( main_text )
-    f.close()
-    for backnum in range(5,1,-1):
-        older_backup_name = 'todo_back_{}.txt'.format( backnum )
-        newer_backup_name = 'todo_back_{}.txt'.format( backnum - 1)
-        n = open( Path( config.get_backup_path() ) / newer_backup_name, 'a+')
-
-        n.seek(0)
-        contents = n.read()
-        n.close()
-        o = open( Path( config.get_backup_path() ) / older_backup_name, 'w')
-        o.write(contents)
-        o.close()
-    backup_name = 'todo_back_1.txt'    
-    b = open( Path( config.get_backup_path() ) / backup_name , "w")
-    b.write( main_text )
-    b.close()
 
 def filter_clear():
 
@@ -407,16 +263,16 @@ def main_handle_keys( e ):
 
     if e.state & 0x4: #control key pressed
         if e.keysym == 'd':
-            item_edit()
+            todolist.edit_item( get_line_text_from_main(), 'DELETE' )
             edit_due_widget.focus_set()
             edit_due_widget.select_range( 0, tk.END )
             return "break"
         if e.keysym == 'e':
-            item_edit()
+            todolist.edit_item( get_line_text_from_main() )
             edit_entry_widget.focus_set()
             return "break"
         if e.keysym == 'p':
-            item_edit()
+            todolist.edit_item( get_line_text_from_main() )
             edit_priority_widget.focus_set()
             edit_priority_widget.select_range( 0, tk.END )
             return "break"
@@ -449,14 +305,13 @@ def main_find_item( line_text ):
 
 def main_refresh():
 
-    global items
-
     pos = main_text_widget.index(tk.INSERT)
     filter_text = filter_text_var.get()
     filter_priority = filter_priority_var.get()
     filter_contexts_projects_string = filter_contexts_projects_var.get().lower()
   
     main_text = ''
+    items = todolist.get_items()
 
     if items:
 
@@ -584,9 +439,7 @@ class Config():
         todo_found = False
 
         try:
-            print ('tp2305vf53')
             todo_txt = open( self.config['files']['todo.txt'], 'a+' )
-            print ('tp2305vf54')
             todo_found = True            
             todo_txt.close()
 
@@ -627,15 +480,178 @@ class Config():
             pass
 
         if not backup_found:
-            print('tp235vj08')
             self.reset_backup()
 
         return self.config['files']['backup_dir']
     
+class TodoList():
+    
+    def __init__( self ):
+        self.items = []
+
+    def edit_item( self, line_data, delete='' ):
+
+        #find the item who's line_text matches the line in the main widget at the cursor
+        line_text = line_data[0]
+
+        for i, item in enumerate( self.items ):
+            if item['line_text'] == line_text:
+                if delete == 'DELETE':
+                    found_item = self.items.pop(i)
+                    main_refresh()
+                else:
+                    found_item = self.items[i]
+                break
+
+        try:
+            edit_iscomplete_var.set( found_item['is_completed'] )
+            edit_completiondate_var.set( found_item['completion_date'] )
+            edit_priority_var.set( found_item['priority'] )
+            edit_creationdate_var.set( found_item['creation_date'] )
+            edit_due_var.set( found_item['due'] )
+            edit_entry_var.set( found_item['text'] )
+
+            edit_linetext_var.set( line_text )
+
+            edit_entry_widget.focus_set()
+
+            self.save()
+
+        except UnboundLocalError:
+            messagebox.showerror("There was an error finding the item.  You may have to refresh or restart the app")
+
+        return "break"
+
+
+    def add_update_item( self ):
+        # adds an item from the edit widgets. Deletes it first if the item already exists
+
+        entry = edit_entry_var.get().strip()
+
+        if entry:
+
+            item = {}
+
+            if edit_iscomplete_var.get() == 'x':
+
+                item['is_completed'] = 'x'
+                item['completion_date'] = date.today().isoformat()
+            
+            else:
+                item['is_completed'] = ''
+                item['completion_date'] = ''
+
+            item['priority'] = ''
+            priority = edit_priority_var.get()
+            if priority > '' and priority in letters:
+                item['priority'] = priority
+
+            item['creation_date'] = ''
+            creationdate = edit_creationdate_var.get()
+            iso_creationdate = get_iso_date( creationdate )
+            if re.match( date_iso_pattern, iso_creationdate):
+                item['creation_date'] = iso_creationdate
+
+            item['due'] = ''
+            due = edit_due_var.get().strip()
+            if due > '':
+                item['due'] = get_iso_date( due )
+                if item['due'] == '':
+                    messagebox.showerror( 'Date Error', 'There was a problem with the due date.  The item has been added without a due date')
+
+            item['text'] = edit_entry_var.get()
+
+            for i, find_item in enumerate( self.items ):
+                if find_item['line_text'] == edit_linetext_var.get():
+                    self.items.pop( i )
+                    break
+
+            item['line_text'] = item_to_text( item )
+
+            self.items.append(item)
+
+            edit_linetext_var.set('')
+            edit_entry_var.set('')
+            edit_iscomplete_var.set('')
+
+            self.sort_items()
+
+            self.save()
+
+            main_refresh()
+            main_find_item( item['line_text'] )
+
+            main_text_widget.focus_set()
+
+    def delete_item( self, item_text, i = 0 ):
+
+        item = self.find_item[ item_text ]
+
+    def get_items( self ):
+
+        return self.items
+    
+    def load_items( self ):
+
+        items = []
+        f = open( config.get_todo() , "r" )
+        data = f.read()
+        f.close()
+        file_items = data.split('\n')
+
+        for file_item in file_items:
+
+            if file_item:
+                item = parse_item( file_item )
+                item['line_text'] = item_to_text( item )
+        
+                items.append( item )
+
+        self.sort_items( items )
+
+    def save( self ):
+
+        main_text = ''
+
+        for item in self.items:
+            main_text = main_text + item['line_text'] + '\n'
+
+        f = open( config.get_todo() , "w")
+        f.write( main_text )
+        f.close()
+        for backnum in range(5,1,-1):
+            older_backup_name = 'todo_back_{}.txt'.format( backnum )
+            newer_backup_name = 'todo_back_{}.txt'.format( backnum - 1)
+            n = open( Path( config.get_backup_path() ) / newer_backup_name, 'a+')
+
+            n.seek(0)
+            contents = n.read()
+            n.close()
+            o = open( Path( config.get_backup_path() ) / older_backup_name, 'w')
+            o.write(contents)
+            o.close()
+        backup_name = 'todo_back_1.txt'    
+        b = open( Path( config.get_backup_path() ) / backup_name , "w")
+        b.write( main_text )
+        b.close()
+
+    def sort_items( self, items=None, sort_by=['is_completed', 'due', 'priority'] ):
+
+        if items is None:
+            items = self.items
+
+        self.items = sorted( items, key=lambda i: ( i[ sort_by[0] ], i[ sort_by[1] ], i[ sort_by[2] ] ) )
+
+        return self.items
+
+
 # some utility variables
 # produces a list of one empty string followed by each letter surrounded by parentheses
 letters = [''] + [ chr(chr_num) for chr_num in range(65,91) ]
 date_iso_pattern = '\d{4}-\d\d-\d\d'
+
+config = Config()
+todolist = TodoList()
 
 if __name__ == "__main__":
 
@@ -686,7 +702,7 @@ if __name__ == "__main__":
     edit_due_var = tk.StringVar()
     edit_due_widget = tk.Entry( edit_frame, textvariable=edit_due_var )
     edit_due_widget.pack( side='left' )
-    edit_due_widget.bind('<Return>', lambda x: item_add_update())
+    edit_due_widget.bind('<Return>', lambda x: todolist.add_update_item())
 
     edit_iscomplete_label = tk.Label( edit_frame, text='is complete' )
     edit_iscomplete_label.pack( side='left', padx=(10,0) )
@@ -700,9 +716,9 @@ if __name__ == "__main__":
 
     edit_linetext_var = tk.StringVar()
 
-    edit_apply = tk.Button( edit_frame, text='apply', command=item_add_update )
+    edit_apply = tk.Button( edit_frame, text='apply', command=todolist.add_update_item )
     edit_apply.pack(side='left')
-    edit_apply.bind('<Return>', lambda x: item_add_update())
+    edit_apply.bind('<Return>', lambda x: todolist.add_update_item())
 
     filter_text_label = tk.Label(search_frame,text="filter text")
     filter_text_label.pack(side="left", padx=(10,0) )
@@ -743,11 +759,8 @@ if __name__ == "__main__":
     root.bind('<Control-f>', lambda x: filter_text_widget.focus_set() )
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
 
-    items = []
 
-    config = Config()
-
-    file_get_items()
+    todolist.load_items()
 
     main_refresh()
 
