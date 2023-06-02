@@ -81,7 +81,7 @@ def get_line_text_from_main():
 
     return [item_line, line_start, line_end]
 
-def parse_completion(item_text):
+def parse_completion( item_text ):
 
     item_text = item_text.strip()
     completion_marker = ''
@@ -544,7 +544,7 @@ class TodoList():
         self.save() 
         main_refresh()
 
-    def item_to_text( item ):
+    def item_to_text(self, item ):
 
         line_text = ''
 
@@ -577,22 +577,22 @@ class TodoList():
             if item['creation_date']:
                 line_text = line_text + 'created:' + item['creation_date'] + ' '
 
+        line_text = line_text.strip()
         return line_text
 
     def parse_item( self, line_text ):
 
-        parsed_item = {}
+        item = {}
 
         if line_text:
 
-            parsed_item['is_completed'], parsed_item['completion_date'], line_text = parse_completion(line_text)
-            parsed_item['priority'], line_text = parse_priority(line_text)
-            parsed_item['creation_date'], line_text = parse_creation(line_text)
-            parsed_item['due'], line_text = parse_due(line_text)
-#            parsed_item['text'] = line_text.strip()
-            parsed_item['text'] = self.item_to_text( parsed_item ) #mk
+            item['is_completed'], item['completion_date'], line_text = parse_completion(line_text)
+            item['priority'], line_text = parse_priority(line_text)
+            item['creation_date'], line_text = parse_creation(line_text)
+            item['due'], line_text = parse_due(line_text)
+            item['text'] = line_text.strip()
 
-        return parsed_item
+        return item
 
     def get_items( self ):
 
