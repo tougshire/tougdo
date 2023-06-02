@@ -21,7 +21,7 @@ def edit_set_priority(e):
     elif re.match('[a-z]',e.keysym[0:1]):
         return "break"
 
-def item_new():
+def edit_new():
 
     edit_entry_widget.focus_set()
     edit_entry_var.set('')
@@ -764,7 +764,7 @@ if __name__ == "__main__":
 
     root.bind('<Control-s>', lambda x: todolist.save() )
     root.bind('<Control-r>', lambda x: main_refresh() )
-    root.bind('<Control-n>', lambda x: item_new() )
+    root.bind('<Control-n>', lambda x: edit_new() )
     root.unbind('<Control-d')
     root.bind('<Control-f>', lambda x: filter_text_widget.focus_set() )
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
