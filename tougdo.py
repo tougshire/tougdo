@@ -525,7 +525,7 @@ class TodoList():
 
             edit_entry_widget.configure( state='disabled')
 
-    def edit_item( self, line_text, delete=False ):
+    def edit_item( self, line_text ):
 
         if  main_text_widget.tag_ranges('sel'):
             self.edit_items()
@@ -546,9 +546,6 @@ class TodoList():
 
             edit_linetext_var.set( line_text )
 
-            if delete:
-                self.items.pop(i)
-
             edit_entry_widget.focus_set()
 
             self.sort_items()
@@ -560,6 +557,7 @@ class TodoList():
     def add_update_item( self ):
         # adds an item from the edit widgets. Deletes it first if the item already exists
 
+        # if selected items in main, leave and go to update_items()
         if main_text_widget.tag_ranges('selected'):
             self.update_items()
             return 'break'
