@@ -6,6 +6,21 @@ from pathlib import Path, PurePath
 import configparser
 from tkinter import filedialog, messagebox
 
+def edit_reset_widgets():
+
+    edit_linetext_var.set('')
+    edit_entry_var.set('')
+    edit_iscomplete_var.set('')
+    edit_priority_var.set('')
+    edit_due_var.set('')
+
+    edit_entry_widget.configure( state='normal')
+    edit_iscomplete_widget.configure( state='normal')
+    edit_due_widget.configure( state='normal')
+    edit_priority_widget.configure( state='normal')
+
+    return "break"
+
 def edit_set_priority(e):
 
     if re.match('[A-Za-z]$', e.keysym):
@@ -185,12 +200,15 @@ def main_handle_keys( e ):
             e.widget.tk_focusNext().focus()
         return "break"
 
-    if e.state & 0x4: #control key pressed
+
+    elif e.state & 0x4: #control key pressed
         if e.keysym == 'd':
-            todolist.edit_item( get_line_text_from_main()[0], True )
+            todolist.edit_item( get_line_text_from_main()[0] )
             edit_due_widget.focus_set()
             edit_due_widget.select_range( 0, tk.END )
             return "break"
+        if e.keysym == 'D':
+            todolist.delete_item( get_line_text_from_main()[0] )
         if e.keysym == 'e':
             todolist.edit_item( get_line_text_from_main()[0] )
             edit_entry_widget.focus_set()
@@ -203,7 +221,6 @@ def main_handle_keys( e ):
         if e.keysym == 'x':
             todolist.set_complete( get_line_text_from_main()[0] )
             return "break"
-
 
     good_keys = [
         'Up',
@@ -233,7 +250,9 @@ def main_refresh():
     filter_text = filter_text_var.get()
     filter_priority = filter_priority_var.get()
     filter_contexts_projects_string = filter_contexts_projects_var.get().lower()
-  
+
+    todolist.sort_items()
+
     main_text = ''
     items = todolist.get_items()
 
@@ -328,6 +347,23 @@ def main_refresh():
     main_text_widget.insert( "1.0", main_text )
     main_text_widget.mark_set( tk.INSERT, pos )
 
+def main_save_sel_range():
+
+    start_pos = str( main_text_widget.tag_ranges('sel')[0] ).split('.')[0] + '.0'
+    end_pos = str( int( str( main_text_widget.tag_ranges('sel')[1] ).split('.')[0] ) + 1 ) + '.0'
+    main_text_widget.tag_add('selected', start_pos, end_pos )
+    return [ start_pos, end_pos ]
+
+def main_unset_selection():
+
+    main_text_widget.tag_remove('selected', '1.0', tk.END )
+    
+
+def unset_and_reset():
+
+    main_unset_selection()
+    edit_reset_widgets()
+
 class Config():
 
     def __init__( self ):
@@ -416,10 +452,12 @@ class TodoList():
     #finds and item based on the items line
     def find_item( self, line_text=None, index=None  ):
 
-        return_item = None
+        item = None
+        i = None
 
         if index is not None:
             found_item = self.items[ index ]
+            # if line_text is provided, double check to make sure the text matches
             if line_text is not None:
                 if found_item['line_text'] == line_text:
                     item = found_item
@@ -428,20 +466,70 @@ class TodoList():
         elif line_text is not None:
             for found_i, found_item in enumerate( self.items):
                 if found_item['line_text'] == line_text:
-                    if index is not None:
-                        if index == found_i:
-                            item = found_item
-                            i = found_i
-                            break
-                    else:
-                        item = found_item
-                        i = found_i
-                        break
+                    item = found_item
+                    i = found_i
+                    break
 
         return [ item, i ]
 
+    #finds and item based on the items line
+    def find_items( self, tag_ranges ):
+
+        pos_start = tag_ranges[0].string.split('.')[0] + '.0'
+        pos_end = str( int( tag_ranges[1].string.split('.')[0] ) + 1 ) + '.0'
+
+        line_texts = main_text_widget.get( pos_start, pos_end ).split('\n')
+
+        items = []
+        idxs = []
+
+        for line_text in line_texts:
+            if line_text is not None:
+                for found_i, found_item in enumerate( self.items):
+                    if found_item['line_text'] == line_text:
+                        items.append( found_item )
+                        idxs.append = found_i
+          
+        return [ items, idxs ]
+
+    def edit_items( self ):
+
+        ranges = main_save_sel_range()
+        line_texts = main_text_widget.get(ranges[0], ranges[1]).split('\n')
+
+        item = self.parse_item( line_texts[0] )
+        edit_iscomplete_var.set( item['is_completed'] )
+        edit_completiondate_var.set( item['completion_date'] )
+        edit_priority_var.set( item['priority'] )
+        edit_creationdate_var.set( item['creation_date'] )
+        edit_due_var.set( item['due'] )
+        edit_entry_var.set( item['text'] )
+        
+        line_texts.pop(0)
+
+        for line_text in line_texts:
+            try:
+                item = self.parse_item( line_text )
+                if item['is_completed'] != edit_iscomplete_var.get():
+                    edit_iscomplete_var.set('')
+                    #for completed, disable if they're not all the same
+                    edit_iscomplete_widget.configure( state='disabled')
+                if item['priority'] != edit_priority_var.get():
+                    edit_priority_var.set('')
+                if item['due'] != edit_due_var.get():
+                    edit_due_var.set('')
+                if item['text'] != edit_entry_var.get():
+                    edit_entry_var.set('')
+            except KeyError:
+                pass
+
+            edit_entry_widget.configure( state='disabled')
 
     def edit_item( self, line_text, delete=False ):
+
+        if  main_text_widget.tag_ranges('sel'):
+            self.edit_items()
+            return
 
         #find the item who's line_text matches the line in the main widget at the cursor
 
@@ -463,6 +551,8 @@ class TodoList():
 
             edit_entry_widget.focus_set()
 
+            self.sort_items()
+            main_refresh()
             self.save()
 
         return "break"
@@ -470,6 +560,10 @@ class TodoList():
     def add_update_item( self ):
         # adds an item from the edit widgets. Deletes it first if the item already exists
 
+        if main_text_widget.tag_ranges('selected'):
+            self.update_items()
+            return 'break'
+        
         entry = edit_entry_var.get().strip()
 
         if entry:
@@ -518,19 +612,66 @@ class TodoList():
             edit_entry_var.set('')
             edit_iscomplete_var.set('')
 
+            self.sort_items() 
+            main_refresh()
             self.save()
 
-            main_refresh()
             main_find_item( item['line_text'] )
 
             main_text_widget.focus_set()
 
-            
+    def update_items( self ):
+
+        ranges = main_save_sel_range()
+
+        line_texts = main_text_widget.get(ranges[0], ranges[1]).split('\n')
+
+        for line_text in line_texts:
+
+            item, i = self.find_item( line_text )
+
+            if(item):
+
+                if edit_iscomplete_widget.cget('state') != 'disabled':
+                    if edit_iscomplete_var.get() == 'x':
+                        self.items[i]['is_completed'] = 'x'
+                        self.items[i]['completion_date'] = date.today().isoformat()
+                    else:
+                        self.items[i]['is_completed'] = ''
+                        self.items[i]['completion_date'] = ''
+
+                priority = edit_priority_var.get()
+                if priority > '' and priority in LETTERS:
+                    self.items[i]['priority'] = priority
+
+                due = edit_due_var.get().strip()
+                if due > '':
+                    self.items[i]['due'] = get_iso_date( due )
+                    if item['due'] == '':
+                        messagebox.showerror( 'Date Error', 'There was a problem with the due date.  The item has been added without a due date')
+
+                self.items[i]['line_text'] = self.item_to_text( self.items[i] )
+
+        edit_reset_widgets()
+        main_unset_selection()
+
+        self.sort_items()
+        main_refresh()
+        self.save()
+
+        main_text_widget.focus_set()
+
     def delete_item( self, line_text = None, i = None ):
 
-        item, line_text, i = self.find_item( line_text, i )
+        item, i = self.find_item( line_text, i )
         if item:
-            self.items.pop( i )
+            if messagebox.askokcancel('Delete?', 'Delete ' + item['text'] + '?'):
+                self.items.pop( i )
+                self.sort_items()
+                main_refresh()
+                self.save()
+            else:
+                messagebox.showinfo('Canceled', 'Item was not deleted')
 
     def set_complete( self, line_text ):
         
@@ -541,8 +682,22 @@ class TodoList():
             self.items[i]['line_text'] = self.item_to_text(item)
 
         self.sort_items()
-        self.save() 
         main_refresh()
+        self.save() 
+
+
+    def set_complete( self, line_text ):
+        
+        item, i = self.find_item( line_text )
+
+        if item:
+            self.items[i]['is_completed'] = 'x' if self.items[i]['is_completed'] == '' else ''
+            self.items[i]['line_text'] = self.item_to_text(item)
+
+        self.sort_items()
+        main_refresh()
+        self.save() 
+
 
     def item_to_text(self, item ):
 
@@ -768,7 +923,7 @@ if __name__ == "__main__":
     root.unbind('<Control-d')
     root.bind('<Control-f>', lambda x: filter_text_widget.focus_set() )
     root.bind('<Control-m>', lambda x: main_text_widget.focus_set() )
-
+    root.bind('<Escape>', lambda x: unset_and_reset() )
 
     todolist.load_items()
 
