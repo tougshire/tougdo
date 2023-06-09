@@ -81,7 +81,6 @@ class Config():
         while not todo_found:
 
             todo_folder = window.select_folder_dialog('Select Folder')
-            print('tp2368a43', (todo_folder))
             todo_found = True
             self.config.setdefault( 'files', {} )
             self.config['files']['todo.txt'] = str( todo_folder  ) / 'todo.txt' 
