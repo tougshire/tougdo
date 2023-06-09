@@ -331,7 +331,15 @@ class TodoList():
     def set_complete( self, itemid ):
 
         try:
-            self.items[ itemid ]['is_completed'] = '' if self.items[ itemid ]['is_completed'] > '' else 'x'
+            if self.items[ itemid ]['is_completed'] == '':
+                self.items[ itemid ]['is_completed'] = 'x'
+                self.items[ itemid ]['completion_date'] == get_iso_date()            
+            else:
+                self.items[ itemid ]['is_completed'] = ''
+                self.items[ itemid ]['completion_date'] == ''
+
+            self.items[ itemid ]['line_text'] = self.item_to_text( self.items[ itemid ] )
+            self.sort_items()
         except:
             raise
 
@@ -437,7 +445,9 @@ class TougshireTodotxt(toga.App):
             )
 
         self.item_table.data = new_data
+        self.edit_description_widget.focus()
         self.item_table.focus()
+
 
     def edit_new_item( self ):
 
@@ -503,9 +513,12 @@ class TougshireTodotxt(toga.App):
         self.edit_new_item()
         self.edit_description_widget.focus()
 
-    def callback_configure_todo(self, command ):
+    def callback_configure_todo( self, command ):
         self.config.reset_todo( self.main_window )
 
+    def callback_set_complete( self, command ):
+        self.todolist.set_complete( int(self.edit_itemid_widget.value) )
+        self.main_refresh()
 
     def startup(self):
         """
@@ -598,6 +611,11 @@ class TougshireTodotxt(toga.App):
             text = 'Apply\u0332',
             shortcut = toga.Key.MOD_1 + 'y',
         )
+        command_set_complete = toga.Command(
+            self.callback_set_complete,
+            text = 'Set Complete (x\u0332)',
+            shortcut = toga.Key.MOD_1 + 'x',
+        )
         command_save = toga.Command(
             self.callback_save,
             text = 'Save',
@@ -610,7 +628,7 @@ class TougshireTodotxt(toga.App):
         self.commands.add( command_update_item )
         self.commands.add( command_save)
         self.commands.add( command_configure_todo )
-
+        self.commands.add( command_set_complete )
 
         self.todolist.load_items()
 
