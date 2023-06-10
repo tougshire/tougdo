@@ -60,3 +60,6 @@ var/
 
 # Briefcase log files
 logs/
+
+# manual backup files
+src/tougdo/app_2369g04.py

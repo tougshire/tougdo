@@ -74,20 +74,17 @@ class Config():
 
         self.window = toga.Window()
  
-    def reset_todo( self, window ):
-        import os
-        todo_found = False
 
-        while not todo_found:
+    async def reset_todo( self, window ):
 
-            todo_folder = window.select_folder_dialog('Select Folder')
-            todo_found = True
+        todo_folder = await window.select_folder_dialog('select_folder')
+        
+        if todo_folder is not None:
             self.config.setdefault( 'files', {} )
-            self.config['files']['todo.txt'] = str( todo_folder  ) / 'todo.txt' 
+            self.config['files']['todo.txt'] = str(Path( todo_folder ) / 'todo.txt' )
             config_file = open( self.config_path, 'w' )
             self.config.write( config_file )
             config_file.close()
-  
 
     def get_todo( self ):
 
@@ -101,9 +98,9 @@ class Config():
         except ( KeyError, PermissionError ):
             pass
 
-        if not todo_found:
+        # if not todo_found:
             
-            self.reset_todo()
+        #     self.reset_todo()
 
         return self.config['files']['todo.txt']
 
@@ -330,104 +327,88 @@ class TodoList():
     
     def set_complete( self, itemid ):
 
-        try:
-            if self.items[ itemid ]['is_completed'] == '':
-                self.items[ itemid ]['is_completed'] = 'x'
-                self.items[ itemid ]['completion_date'] == get_iso_date()            
-            else:
-                self.items[ itemid ]['is_completed'] = ''
-                self.items[ itemid ]['completion_date'] == ''
+        if self.items[ itemid ]['is_completed'] == '':
+            self.items[ itemid ]['is_completed'] = 'x'
+            self.items[ itemid ]['completion_date'] == get_iso_date()            
+        else:
+            self.items[ itemid ]['is_completed'] = ''
+            self.items[ itemid ]['completion_date'] == ''
 
-            self.items[ itemid ]['line_text'] = self.item_to_text( self.items[ itemid ] )
-            self.sort_items()
-        except:
-            raise
+        self.items[ itemid ]['line_text'] = self.item_to_text( self.items[ itemid ] )
+        self.sort_items()
 
     def update_item( self, itemid, is_completed, description, due, priority ):
         
-        try:
-            itemid = int( itemid )
+        itemid = int( itemid )
 
-            if not 'creation_date' in self.items[ itemid ]:
-                self.items[ itemid ]['creation_date'] = ''
+        if not 'creation_date' in self.items[ itemid ]:
+            self.items[ itemid ]['creation_date'] = ''
 
-            if is_completed:
-                self.items[ itemid ][ 'is_completed' ] = 'x'
-                if self.items[ itemid ]['completion_date'] == '':
-                    self.items[ itemid ]['completion_date'] == get_iso_date()
-            else:
-                self.items[ itemid ][ 'is_completed' ] = ''
-                self.items[ itemid ]['completion_date'] = ''
+        if is_completed:
+            self.items[ itemid ][ 'is_completed' ] = 'x'
+            if self.items[ itemid ]['completion_date'] == '':
+                self.items[ itemid ]['completion_date'] == get_iso_date()
+        else:
+            self.items[ itemid ][ 'is_completed' ] = ''
+            self.items[ itemid ]['completion_date'] = ''
 
-            self.items[ itemid ]['description'] = description
+        self.items[ itemid ]['description'] = description
 
-            self.items[ itemid ]['priority'] = ''
-            if priority > '' and priority in LETTERS:
-                self.items[ itemid ]['priority'] = priority
+        self.items[ itemid ]['priority'] = ''
+        if priority > '' and priority in LETTERS:
+            self.items[ itemid ]['priority'] = priority
 
-            self.items[ itemid ]['due'] = due
-            if due > '':
-                self.items[ itemid ]['due'] = get_iso_date( due )
+        self.items[ itemid ]['due'] = due
+        if due > '':
+            self.items[ itemid ]['due'] = get_iso_date( due )
 
-            self.items[ itemid ]['line_text'] = self.item_to_text( self.items[ itemid ] )
+        self.items[ itemid ]['line_text'] = self.item_to_text( self.items[ itemid ] )
 
-            self.sort_items()
-
-        except (ValueError, TypeError, IndexError) as err:
-            print(f"Error {err=}, {type(err)=}")
-            raise err
-        except Exception as err:
-            print(f"Unexpected {err=}, {type(err)=}")
-            raise err
+        self.sort_items()
 
     def add_item( self, is_completed, description, due, priority ):
         
-        try:
-            new_item = {}
+        new_item = {}
 
-            new_item['creation_date'] = get_iso_date()
+        new_item['creation_date'] = get_iso_date()
 
-            if is_completed:
-                new_item[ 'is_completed' ] = 'x'
-                if new_item['completion_date'] == '':
-                    new_item['completion_date'] == get_iso_date()
-            else:
-                new_item[ 'is_completed' ] = ''
-                new_item['completion_date'] = ''
+        if is_completed:
+            new_item[ 'is_completed' ] = 'x'
+            if new_item['completion_date'] == '':
+                new_item['completion_date'] == get_iso_date()
+        else:
+            new_item[ 'is_completed' ] = ''
+            new_item['completion_date'] = ''
 
-            new_item['description'] = description
+        new_item['description'] = description
 
-            new_item['priority'] = ''
-            if priority > '' and priority in LETTERS:
-                new_item['priority'] = priority
+        new_item['priority'] = ''
+        if priority > '' and priority in LETTERS:
+            new_item['priority'] = priority
 
-            new_item['due'] = due
-            if due > '':
-                new_item['due'] = get_iso_date( due )
+        new_item['due'] = due
+        if due > '':
+            new_item['due'] = get_iso_date( due )
 
-            new_item['line_text'] = self.item_to_text( new_item )
+        new_item['line_text'] = self.item_to_text( new_item )
 
-            self.items.append( new_item )
+        self.items.append( new_item )
 
-            self.sort_items()
-
-        except (ValueError, TypeError, IndexError) as err:
-            print(f"Error {err=}, {type(err)=}")
-            raise err
-        except Exception as err:
-            print(f"Unexpected {err=}, {type(err)=}")
-            raise err
+        self.sort_items()
 
 class TougshireTodotxt(toga.App):
 
     def main_refresh( self ):
 
         items = self.todolist.get_items()
-        
-        previous_due = items[0]['due']
 
         new_data = []
-        
+                
+        try:
+            previous_due = items[0]['due']
+        except IndexError:
+            return
+
         for itemid, item in enumerate(self.todolist.get_items()):
 
             if previous_due != item['due']:
@@ -448,6 +429,12 @@ class TougshireTodotxt(toga.App):
         self.edit_description_widget.focus()
         self.item_table.focus()
 
+    def find_item( self, complete, due, description, priority ):
+        for itemid, item in enumerate( self.todolist.get_items() ):
+            if item['is_completed'] == complete and item['due'] == due and item['description'] == description and item['priority'] == priority:
+                return( itemid )
+
+        return None
 
     def edit_new_item( self ):
 
@@ -463,12 +450,14 @@ class TougshireTodotxt(toga.App):
     def edit_item( self ):
         if self.item_table.selection:
             row = self.item_table.selection
-        if hasattr( row, 'itemid'):
+
             self.edit_is_completed_widget.value = row.complete
             self.edit_due_widget.value = row.due
             self.edit_priority_widget.value = row.priority
             self.edit_description_widget.value = row.description
-            self.edit_itemid_widget.value = row.itemid
+
+            self.edit_itemid_widget.value = self.find_item( row.complete, row.due, row.description, row.priority )
+
             self.edit_addnew_widget.value = False
             self.edit_addnew_widget.enabled = True
 
@@ -513,8 +502,8 @@ class TougshireTodotxt(toga.App):
         self.edit_new_item()
         self.edit_description_widget.focus()
 
-    def callback_configure_todo( self, command ):
-        self.config.reset_todo( self.main_window )
+    async def callback_configure_todo( self, command ):
+        await self.config.reset_todo( self.main_window )
 
     def callback_set_complete( self, command ):
         self.todolist.set_complete( int(self.edit_itemid_widget.value) )
@@ -529,7 +518,7 @@ class TougshireTodotxt(toga.App):
         show the main window.
         """
         self.main_box = toga.Box(style=Pack(direction=COLUMN, width="1000", height=600, flex=1))
-        self.item_table = toga.Table( ['Complete','Priority', 'Due', 'Description', 'itemid'], missing_value='', style=Pack(width='1000', height=500), on_select=self.callback_table_on_select)
+        self.item_table = toga.Table( ['Complete','Priority', 'Due', 'Description'], missing_value='', style=Pack(width='1000', height=500), on_select=self.callback_table_on_select)
         self.main_box.add( self.item_table )
 
     
