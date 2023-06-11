@@ -142,9 +142,32 @@ class TodoList():
         self.items = []
         self.config = Config()
 
-    def get_items( self ):
+    def get_items( self, filter_description=None, filter_priority=None ):
+
+        filtered_items = []
+
+        if filter_description is not None or filter_priority is not None:
+            print('tp236a914')
+            for item in self.items:
+                pass_item = True
+
+                if pass_item: #this first test just keeps everything else lined up
+                    if filter_description is not None:
+                        if not filter_description.lower() in item['description'].lower():
+                            pass_item = False
+
+                if pass_item: 
+                    if filter_priority is not None:
+                        if not item['priority'].lower() in filter_priority:
+                            pass_item = False
+
+                if pass_item:
+                    filtered_items.append( item )
+
+            return filtered_items
+  
         return self.items
-    
+
     def load_items( self ):
 
         self.items = []
@@ -400,7 +423,10 @@ class TougshireTodotxt(toga.App):
 
     def main_refresh( self ):
 
-        items = self.todolist.get_items()
+        filter_description = self.filter_description_widget.value if self.filter_description_widget.value > '' else None
+        filter_priority = self.filter_priority_widget.value if self.filter_priority_widget.value > '' else None
+
+        items = self.todolist.get_items( filter_description, filter_priority )
 
         new_data = []
                 
@@ -409,7 +435,7 @@ class TougshireTodotxt(toga.App):
         except IndexError:
             return
 
-        for itemid, item in enumerate(self.todolist.get_items()):
+        for itemid, item in enumerate( items ):
 
             if previous_due != item['due']:
                 new_data.append(("-", "", "", "",""))
@@ -467,6 +493,14 @@ class TougshireTodotxt(toga.App):
     def callback_table_on_select( self, table, row ):
         self.edit_item( )
 
+    def callback_filter_description( self, command ):
+        self.main_refresh()
+        self.filter_description_widget.focus()
+
+    def callback_filter_priority( self, command ):
+        self.main_refresh()
+        self.filter_priority_widget.focus()
+
     def callback_apply_item( self, command ):
 
         if self.edit_addnew_widget.value:
@@ -518,22 +552,25 @@ class TougshireTodotxt(toga.App):
         show the main window.
         """
         self.main_box = toga.Box(style=Pack(direction=COLUMN, width="1000", height=600, flex=1))
-        self.item_table = toga.Table( ['Complete','Priority', 'Due', 'Description'], missing_value='', style=Pack(width='1000', height=500), on_select=self.callback_table_on_select)
-        self.main_box.add( self.item_table )
 
     
         edit_box = toga.Box(style=Pack(direction=ROW, width="1000", flex=1))
 
-        edit_is_completed_box = toga.Box(style=Pack(direction=COLUMN))
-        edit_is_completed_label = toga.Label('completed')
-        self.edit_is_completed_widget = toga.Switch('')
-        edit_is_completed_box.add(edit_is_completed_label)
-        edit_is_completed_box.add(self.edit_is_completed_widget)
-        edit_box.add(edit_is_completed_box)
+        edit_label_box = toga.Box(style=Pack(direction=COLUMN))
+        edit_label_label = toga.Label('edit:', style=Pack(font_weight="bold"))
+        edit_label_box.add( edit_label_label )
+        edit_box.add( edit_label_box )
+
+        edit_description_box = toga.Box(style=Pack(direction=COLUMN))
+        edit_description_label = toga.Label('description')
+        self.edit_description_widget = toga.TextInput()
+        edit_description_box.add(edit_description_label)
+        edit_description_box.add(self.edit_description_widget)
+        edit_box.add(edit_description_box)
 
         edit_priority_box = toga.Box(style=Pack(direction=COLUMN))
         edit_priority_label = toga.Label('priority')
-        self.edit_priority_widget = toga.TextInput()
+        self.edit_priority_widget = toga.TextInput(style=Pack(width=20))
         edit_priority_box.add(edit_priority_label)
         edit_priority_box.add(self.edit_priority_widget)
         edit_box.add(edit_priority_box)
@@ -545,12 +582,12 @@ class TougshireTodotxt(toga.App):
         edit_due_box.add(self.edit_due_widget)
         edit_box.add(edit_due_box)
 
-        edit_description_box = toga.Box(style=Pack(direction=COLUMN))
-        edit_description_label = toga.Label('description')
-        self.edit_description_widget = toga.TextInput()
-        edit_description_box.add(edit_description_label)
-        edit_description_box.add(self.edit_description_widget)
-        edit_box.add(edit_description_box)
+        edit_is_completed_box = toga.Box(style=Pack(direction=COLUMN))
+        edit_is_completed_label = toga.Label('completed')
+        self.edit_is_completed_widget = toga.Switch('')
+        edit_is_completed_box.add(edit_is_completed_label)
+        edit_is_completed_box.add(self.edit_is_completed_widget)
+        edit_box.add(edit_is_completed_box)
 
         edit_addnew_box = toga.Box(style=Pack(direction=COLUMN))
         edit_addnew_label = toga.Label('add new ')
@@ -569,6 +606,60 @@ class TougshireTodotxt(toga.App):
         self.edit_itemid_widget = toga.TextInput()
 
         self.main_box.add(edit_box)
+
+        filter_box = toga.Box(style=Pack(direction=ROW, width="1000", flex=1))
+
+        filter_label_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_label_label = toga.Label('filter:', style=Pack(font_weight="bold"))
+        filter_label_box.add( filter_label_label )
+        filter_box.add( filter_label_box )
+
+
+        filter_description_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_description_label = toga.Label('description')
+        self.filter_description_widget = toga.TextInput( on_change=self.callback_filter_description )
+        filter_description_box.add(filter_description_label)
+        filter_description_box.add(self.filter_description_widget)
+        filter_box.add(filter_description_box)
+
+
+
+        filter_priority_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_priority_label = toga.Label('priority')
+        self.filter_priority_widget = toga.TextInput(style=Pack(width=30), on_change=self.callback_filter_priority )
+        filter_priority_box.add(filter_priority_label)
+        filter_priority_box.add(self.filter_priority_widget)
+        filter_box.add(filter_priority_box)
+
+        filter_due_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_due_label = toga.Label('due')
+        self.filter_due_widget = toga.TextInput()
+        filter_due_box.add(filter_due_label)
+        filter_due_box.add(self.filter_due_widget)
+        filter_box.add(filter_due_box)
+
+        filter_is_completed_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_is_completed_label = toga.Label('completed')
+        self.filter_is_completed_widget = toga.Switch('')
+        filter_is_completed_box.add(filter_is_completed_label)
+        filter_is_completed_box.add(self.filter_is_completed_widget)
+        filter_box.add(filter_is_completed_box)
+
+        filter_apply_box = toga.Box(style=Pack(direction=COLUMN))
+        filter_apply_label = toga.Label(' ')
+        filter_apply_button = toga.Button('apply', on_press=self.callback_apply_item)
+        filter_apply_box.add( filter_apply_label )
+        filter_apply_box.add( filter_apply_button )
+        filter_box.add( filter_apply_box )        
+
+        self.filter_itemid_widget = toga.TextInput()
+
+        self.main_box.add(filter_box)
+
+        self.item_table = toga.Table( ['Complete','Priority', 'Due', 'Description'], missing_value='', style=Pack(width='1000', height=500), on_select=self.callback_table_on_select)
+        self.main_box.add( self.item_table )
+
+
         self.todolist = TodoList()
         self.config = Config()
 
