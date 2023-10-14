@@ -1,27 +1,28 @@
-# todo_list/tougdo/urls.py
 from django.urls import path
 from tougdo import views
 
 urlpatterns = [
-    path("", views.ListListView.as_view(), name="index"),
-    path("list/<int:list_id>/", views.ItemListView.as_view(), name="list"),
-    # CRUD patterns for ToDoLists
-    path("list/add/", views.ListCreate.as_view(), name="list-add"),
-    path("list/<int:pk>/delete/", views.ListDelete.as_view(), name="list-delete"),
-    # CRUD patterns for ToDoItems
+    # CRUD patterns for Items
+    path("", views.ItemList.as_view(), name="items"),
+    path("item", views.ItemList.as_view(), name="items"),
     path(
-        "list/<int:list_id>/item/add/",
+        "item/add/",
         views.ItemCreate.as_view(),
         name="item-add",
     ),
     path(
-        "list/<int:list_id>/item/<int:pk>/",
-        views.ItemUpdate.as_view(),
-        name="item-update",
-    ),
-    path(
-        "list/<int:list_id>/item/<int:pk>/delete/",
+        "item/<int:pk>/delete/",
         views.ItemDelete.as_view(),
         name="item-delete",
     ),
+    path(
+        "item/<int:pk>/update/",
+        views.ItemUpdate.as_view(),
+        name="item-update",
+    ),
+    path("tag", views.TagList.as_view(), name="tags"),
+    path("tag/<int:tag_id>/", views.TagDetail.as_view(), name="tag"),
+    # CRUD patterns for tags
+    path("tag/add/", views.TagCreate.as_view(), name="tag-add"),
+    path("tag/<int:pk>/delete/", views.TagDelete.as_view(), name="tag-delete"),
 ]
