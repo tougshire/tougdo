@@ -2,16 +2,40 @@
 
 {% block content %}
 
-<h3>{{ title }}</h3>
-<form method="post">
-    {% csrf_token %}
-    <table>
-        {{ form.as_table }}
-    </table>
-    <input type="submit" value="Submit">
-    {% if object.pk %}
-    <button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
-    {% endif %}
-</form>
+  <h3>{{ title }}</h3>
+  <form method="post">
+      {% csrf_token %}
+      <div>
+          {% include 'touglates/form_field.html' with field=form.title %}
+      </div>
+      <div>
+        {% include 'touglates/form_field.html' with field=form.description %}
+      </div>
+      <div>
+        {% include 'touglates/form_field.html' with field=form.due_date %}
+      </div>
+      <div>
+        {{ form.done_date.as_hidden }}
+        {% with checkbox='<input id="chk_done" type="checkbox">' %}
+        {% include 'touglates/form_field.html' with field=checkbox label_tag="Done" %}
+        {% endwith %}
+      </div>
 
+      <input type="submit" value="Submit">
+      {% if object.pk %}
+      <button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
+      {% endif %}
+  </form>
 {% endblock %}
+{% block after_content %}
+  <script>
+    document.getElementById('chk_done').addEventListener('click', function(e) {
+      done_date = document.getElementById('{{ form.done_date.id_for_label }}')
+      if(e.target.checked){
+        done_date.value = new Date().toISOString()
+      } else {
+        done_date.value = ''
+      }
+    });
+    </script>
+    {% endblock %}
