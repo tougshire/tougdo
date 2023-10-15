@@ -5,18 +5,21 @@
 {% if object_list %}
 <h3>All Items</h3>
 {% endif %}
-<ul>
+<table>
     {% for item in object_list %}
-    <li>
-        <div role="button"
+    <tr>
+        <td role="button"
             onclick="location.href='{% url "tougdo:item-update" item.id %}'">
             {{ item.title }}
-        </div>
-    </li>
+        </td>
+        <td>
+          {{ item.due_date}}
+        </td>
+      </tr>
     {% empty %}
     <h4>You have no items</h4>
     {% endfor %}
-</ul>
+  </table>
 <p>
     <input value="Add a new item" type="button"
         onclick="location.href='{% url "tougdo:item-add" %}'"/>
