@@ -44,14 +44,14 @@ class ItemList(LoginRequiredMixin, ListView):
     template_name = "tougdo/index.html"
 
     def get_queryset(self):
-        if "tag_id" in self.kwargs:
-            return Item.objects.filter(
-                tagged_item__tag__id=self.kwargs["tag_id"],
-                owner=self.request.user,
-                done_date=None,
-            )
-        else:
-            return Item.objects.filter(owner=self.request.user, done_date=None)
+        filter_args = {"owner": self.request.user}
+
+        if "tagslug" in self.kwargs and self.kwargs.get("tagslug") > "":
+            filter_args["tagslug"] = self.kwargs.get("tagslug")
+        if not ("all" in self.kwargs and self.kwargs.get("all")):
+            filter_args["done_date__isnull"] = True
+
+        return Item.objects.filter(**filter_args)
 
     def get_context_data(self):
         context = super().get_context_data()
