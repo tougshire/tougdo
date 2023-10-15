@@ -1,14 +1,20 @@
 from django.urls import path
 from tougdo import views
 
+app_name = "tougdo"
+
 urlpatterns = [
     # CRUD patterns for Items
     path("", views.ItemList.as_view(), name="items"),
-    path("item", views.ItemList.as_view(), name="items"),
     path(
         "item/add/",
         views.ItemCreate.as_view(),
         name="item-add",
+    ),
+    path(
+        "item/<int:pk>/detail/",
+        views.ItemDetail.as_view(),
+        name="item-detail",
     ),
     path(
         "item/<int:pk>/delete/",
