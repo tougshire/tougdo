@@ -9,7 +9,7 @@
         {{ form.as_table }}
     </table>
     <input type="submit" value="Submit">
-
+    <button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
 </form>
 
 {% endblock %}

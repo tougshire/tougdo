@@ -70,18 +70,17 @@ class ItemUpdate(LoginRequiredMixin, UpdateView):
         return context
 
     def get_success_url(self):
-        return reverse("tougdo:list", args=[self.object.tag_id])
+        return reverse("tougdo:items")
 
 
 class ItemDelete(LoginRequiredMixin, DeleteView):
     model = Item
 
     def get_success_url(self):
-        return reverse_lazy("tougdo:list", args=[self.kwargs["list_id"]])
+        return reverse_lazy("tougdo:items")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["tag"] = self.object.tag
         return context
 
 

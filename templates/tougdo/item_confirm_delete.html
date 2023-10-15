@@ -11,7 +11,7 @@
     <form method="POST">
         {% csrf_token %}
         <input value="Yes,delete." type="submit">
-        <input value="Cancel" type="button" onclick="location.href='{% url "tougdo:list" todo_list.id %}';" />
+        <input value="Cancel" type="button" onclick="location.href='{% url "tougdo:items" %}';" />
     </form>
 
     {% endblock %}
