@@ -6,6 +6,17 @@ app_name = "tougdo"
 urlpatterns = [
     # CRUD patterns for Items
     path("", views.ItemList.as_view(), name="items"),
+    path("items/tag/<slug:tagslug>/", views.ItemList.as_view(), name="items"),
+    path(
+        "items/all/<int:all>/",
+        views.ItemList.as_view(),
+        name="items",
+    ),
+    path(
+        "items/tag/<slug:tagslug>/all/<int:all>/",
+        views.ItemList.as_view(),
+        name="items",
+    ),
     path(
         "item/add/",
         views.ItemCreate.as_view(),
