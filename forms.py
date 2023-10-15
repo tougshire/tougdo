@@ -6,8 +6,8 @@ from django.core.exceptions import ValidationError
 
 from tougdo.models import (
     Item,
-    ToDoList,
-    ToDoMember,
+    Tag,
+    TaggedItem,
 )
 from touglates.widgets import TouglateDateInput
 
@@ -32,15 +32,15 @@ class ItemForm(forms.ModelForm):
         ]
 
 
-class ToDoMemberForm(forms.ModelForm):
+class TaggedItemForm(forms.ModelForm):
     class Meta:
-        model = ToDoMember
+        model = TaggedItem
         fields = [
             "tag",
             "item",
         ]
 
 
-ItemToDoMemberFormSet = forms.inlineformset_factory(
-    ToDoMember, Item, form=ToDoMemberForm, extra=5, can_delete=True
+ItemTaggedItemFormSet = forms.inlineformset_factory(
+    Item, TaggedItem, form=TaggedItemForm, extra=5, can_delete=True
 )
