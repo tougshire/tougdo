@@ -9,7 +9,9 @@
         {{ form.as_table }}
     </table>
     <input type="submit" value="Submit">
+    {% if object.pk %}
     <button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
+    {% endif %}
 </form>
 
 {% endblock %}
