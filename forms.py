@@ -29,6 +29,7 @@ class ItemForm(forms.ModelForm):
             "title",
             "description",
             "due_date",
+            "done_date",
         ]
 
 
