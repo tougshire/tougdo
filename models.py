@@ -12,6 +12,7 @@ def one_week_hence():
 class Tag(models.Model):
     title = models.SlugField(max_length=50, unique=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    slug = models.SlugField("slug", blank=True, null=True)
 
     def get_absolute_url(self):
         return reverse("tougdo:tag", args=[self.id])
