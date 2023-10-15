@@ -48,9 +48,10 @@ class ItemList(LoginRequiredMixin, ListView):
             return Item.objects.filter(
                 tagged_item__tag__id=self.kwargs["tag_id"],
                 owner=self.request.user,
+                done_date=None,
             )
         else:
-            return Item.objects.filter(owner=self.request.user)
+            return Item.objects.filter(owner=self.request.user, done_date=None)
 
     def get_context_data(self):
         context = super().get_context_data()
