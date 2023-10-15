@@ -11,7 +11,7 @@
             {% for item in object_list %}
             <li>
                 <div>
-                    <div role="button" onclick="location.href='{% url "item-update" item.id %}'">
+                    <div role="button" onclick="location.href='{% url "tougdo:item-update" item.id %}'">
                         {{ item.title }}
                         (Due {{ item.due_date| date:"l, F j" }})
                     </div>
@@ -21,7 +21,7 @@
             {% endfor %}
         </ul>
         <p>
-            <input value="Add a new item" type="button" onclick="location.href='{% url "item-add"  %}'" />
+            <input value="Add a new item" type="button" onclick="location.href='{% url "tougdo:item-add"  %}'" />
         </p>
     </div>
 </div>

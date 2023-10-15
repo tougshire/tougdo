@@ -9,7 +9,7 @@
     {% for item in object_list %}
     <li>
         <div role="button"
-            onclick="location.href='{% url "item-update" item.id %}'">
+            onclick="location.href='{% url "tougdo:item-update" item.id %}'">
             {{ item.title }}
         </div>
     </li>
@@ -19,7 +19,7 @@
 </ul>
 <p>
     <input value="Add a new item" type="button"
-        onclick="location.href='{% url "item-add" %}'"/>
+        onclick="location.href='{% url "tougdo:item-add" %}'"/>
 </p>
 
 {% endblock %}

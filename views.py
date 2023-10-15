@@ -9,6 +9,7 @@ from django.views.generic import (
     DeleteView,
 )
 from .models import Item, Tag
+from .forms import ItemForm
 
 
 class ItemCreate(LoginRequiredMixin, CreateView):
@@ -19,19 +20,19 @@ class ItemCreate(LoginRequiredMixin, CreateView):
         "due_date",
     ]
 
-    def get_initial(self):
-        initial_data = super().get_initial()
-        owner = self.request.user
-        initial_data["owner"] = owner
-        return initial_data
-
     def get_context_data(self):
         context = super().get_context_data()
         context["title"] = "Create a new item"
         return context
 
+    def form_valid(self, form):
+        form_saved = form.save(commit=False)
+        form_saved.owner = self.request.user
+        form_saved.save()
+        return super().form_valid(form_saved)
+
     def get_success_url(self):
-        return reverse("list", args=[self.object.tag_id])
+        return reverse("tougdo:items")
 
 
 class ItemDetail(LoginRequiredMixin, DetailView):
@@ -40,7 +41,7 @@ class ItemDetail(LoginRequiredMixin, DetailView):
 
 class ItemList(LoginRequiredMixin, ListView):
     model = Item
-    template_name = "tougdo/tag.html"
+    template_name = "tougdo/index.html"
 
     def get_queryset(self):
         if "tag_id" in self.kwargs:
@@ -60,27 +61,23 @@ class ItemList(LoginRequiredMixin, ListView):
 
 class ItemUpdate(LoginRequiredMixin, UpdateView):
     model = Item
-    fields = [
-        "title",
-        "description",
-        "due_date",
-    ]
+    template_name = "tougdo/item_form.html"
+    form_class = ItemForm
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["tag"] = self.object.tag
         context["title"] = "Edit item"
         return context
 
     def get_success_url(self):
-        return reverse("list", args=[self.object.tag_id])
+        return reverse("tougdo:list", args=[self.object.tag_id])
 
 
 class ItemDelete(LoginRequiredMixin, DeleteView):
     model = Item
 
     def get_success_url(self):
-        return reverse_lazy("list", args=[self.kwargs["list_id"]])
+        return reverse_lazy("tougdo:list", args=[self.kwargs["list_id"]])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -110,7 +107,7 @@ class TagDelete(LoginRequiredMixin, DeleteView):
     model = Tag
     # You have to use reverse_lazy() instead of reverse(),
     # as the urls are not loaded when the file is imported.
-    success_url = reverse_lazy("index")
+    success_url = reverse_lazy("tougdo:index")
 
 
 class TagList(LoginRequiredMixin, ListView):
