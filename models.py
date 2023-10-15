@@ -26,6 +26,7 @@ class Item(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(default=one_week_hence)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    done_date = models.DateTimeField("is done", blank=True, null=True)
 
     def get_absolute_url(self):
         return reverse("tougdo:item-update", self.pk)
