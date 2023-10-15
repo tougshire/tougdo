@@ -14,7 +14,7 @@ class Tag(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def get_absolute_url(self):
-        return reverse("tag", args=[self.id])
+        return reverse("tougdo:tag", args=[self.id])
 
     def __str__(self):
         return self.title
@@ -28,7 +28,7 @@ class Item(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def get_absolute_url(self):
-        return reverse("item-update", self.pk)
+        return reverse("tougdo:item-update", self.pk)
 
     def __str__(self):
         return f"{self.title}: due {self.due_date}"
