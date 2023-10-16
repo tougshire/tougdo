@@ -1,28 +1,33 @@
-{% extends "./_base.html" %}
+{% extends "touglates/base.html" %}
 
-{% block content %}
+{% block body %}
+  <body>
+    {% block content %}
 
-{% if object_list %}
-<h3>All Items</h3>
-{% endif %}
-<table>
-    {% for item in object_list %}
-    <tr>
-        <td role="button"
-            onclick="location.href='{% url "tougdo:item-update" item.id %}'">
-            {{ item.title }}
-        </td>
-        <td>
-          {{ item.due_date}}
-        </td>
-      </tr>
-    {% empty %}
-    <h4>You have no items</h4>
-    {% endfor %}
-  </table>
-<p>
-    <input value="Add a new item" type="button"
-        onclick="location.href='{% url "tougdo:item-add" %}'"/>
-</p>
+    {% if object_list %}
+    <h3>Items</h3>
+    {% endif %}
+    <table>
+        {% for item in object_list %}
+        <tr>
+            <td>
+                <a class="title" href="{% url "tougdo:item-update" item.id %}">
+                {{ item.title }}
+                </a>
+            </td>
+            <td>
+              {{ item.due_date}}
+            </td>
+          </tr>
+        {% empty %}
+        <h4>You have no items</h4>
+        {% endfor %}
+      </table>
+    <p>
+        <input value="Add a new item" type="button"
+            onclick="location.href='{% url "tougdo:item-add" %}'"/>
+    </p>
 
+    {% endblock %}
+  </body>
 {% endblock %}
