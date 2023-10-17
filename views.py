@@ -14,16 +14,7 @@ from .forms import ItemForm
 
 class ItemCreate(LoginRequiredMixin, CreateView):
     model = Item
-    fields = [
-        "title",
-        "description",
-        "due_date",
-    ]
-
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["title"] = "Create a new item"
-        return context
+    form_class = ItemForm
 
     def form_valid(self, form):
         form_saved = form.save(commit=False)
@@ -64,11 +55,6 @@ class ItemUpdate(LoginRequiredMixin, UpdateView):
     model = Item
     template_name = "tougdo/item_form.html"
     form_class = ItemForm
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = "Edit item"
-        return context
 
     def get_success_url(self):
         return reverse("tougdo:items")
