@@ -53,8 +53,8 @@ class ItemList(LoginRequiredMixin, ListView):
 
         return Item.objects.filter(**filter_args)
 
-    def get_context_data(self):
-        context = super().get_context_data()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         if "tag_id" in self.kwargs:
             context["tag"] = Tag.objects.get(id=self.kwargs["tag_id"])
         return context
@@ -65,8 +65,8 @@ class ItemUpdate(LoginRequiredMixin, UpdateView):
     template_name = "tougdo/item_form.html"
     form_class = ItemForm
 
-    def get_context_data(self):
-        context = super().get_context_data()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         context["title"] = "Edit item"
         return context
 
