@@ -6,7 +6,7 @@ from django.urls import reverse
 
 
 def one_week_hence():
-    return date.today + timedelta(days=7)
+    return date.today() + timedelta(days=7)
 
 
 class Tag(models.Model):
