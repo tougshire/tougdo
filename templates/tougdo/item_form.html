@@ -1,12 +1,6 @@
 {% extends "base_form.html" %}
-{% block body %}
-
-{% block content %}
-
-  <h3>{{ title }}</h3>
-  <form method="post">
-      {% csrf_token %}
-      <div>
+{% block form_fields %}
+  <div>
           {% include 'touglates/form_field.html' with field=form.title %}
       </div>
       <div>
@@ -26,18 +20,16 @@
       {% if object.pk %}
       <button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
       {% endif %}
-  </form>
 {% endblock %}
-{% block after_content %}
+{% block afterform %}
   <script>
     document.getElementById('chk_done').addEventListener('click', function(e) {
       done_date = document.getElementById('{{ form.done_date.id_for_label }}')
       if(e.target.checked){
-        done_date.value = new Date().toISOString()
+        done_date.value = new Date().toISOString().substring(0,10)
       } else {
         done_date.value = ''
       }
     });
     </script>
     {% endblock %}
-{% endblock %}
