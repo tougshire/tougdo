@@ -1,7 +1,7 @@
 {% extends 'touglates/base.html' %}
 {% load static %}
 
-{% block content %}
+{% block body %}
   <script src='{% static 'touglates\touglates.js' %}'></script>
   <div class="form">
     {% if form.errors %}{{ form.errors }}{% endif %}
