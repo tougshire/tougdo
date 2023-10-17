@@ -9,7 +9,7 @@ from tougdo.models import (
     Tag,
     TaggedItem,
 )
-from touglates.widgets import TouglateDateInput
+from touglates.widgets import TouglateDateInput, TouglateDateTimeInput
 
 
 def validate_blank(value):
@@ -31,6 +31,7 @@ class ItemForm(forms.ModelForm):
             "due_date",
             "done_date",
         ]
+        widgets = {"due_date": TouglateDateInput()}
 
 
 class TaggedItemForm(forms.ModelForm):
