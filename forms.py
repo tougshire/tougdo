@@ -31,7 +31,10 @@ class ItemForm(forms.ModelForm):
             "due_date",
             "done_date",
         ]
-        widgets = {"due_date": TouglateDateInput()}
+        widgets = {
+            "due_date": TouglateDateInput(),
+            "title": forms.TextInput(attrs={"style": "width:80%;"}),
+        }
 
 
 class TaggedItemForm(forms.ModelForm):
