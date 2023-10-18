@@ -7,6 +7,9 @@
         {% include 'touglates/form_field.html' with field=form.description %}
       </div>
       <div>
+        {% include 'touglates/form_field.html' with field=form.priority %}
+      </div>
+      <div>
         {% include 'touglates/form_field.html' with field=form.due_date %}
       </div>
       <div>
@@ -32,4 +35,5 @@
       }
     });
     </script>
-    {% endblock %}
+
+{% endblock %}

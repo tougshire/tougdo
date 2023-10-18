@@ -21,11 +21,18 @@ class Tag(models.Model):
         return self.title
 
 
+class Priority(models.Model):
+    label = models.CharField(max_length=20)
+    description = models.TextField(blank=True)
+    number = models.IntegerField()
+
+
 class Item(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateField(default=one_week_hence)
+    priority = models.ForeignKey(Priority, on_delete=models.SET_NULL, null=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     done_date = models.DateField("is done", blank=True, null=True)
 
