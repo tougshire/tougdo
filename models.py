@@ -43,7 +43,7 @@ class Item(models.Model):
         return f"{self.title}: due {self.due_date}"
 
     class Meta:
-        ordering = ["due_date"]
+        ordering = ["due_date", "priority"]
 
 
 class TaggedItem(models.Model):
