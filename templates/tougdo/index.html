@@ -1,4 +1,9 @@
-{% extends "touglates/base.html" %}
+{% extends "base.html" %}
+{% load static %}
+{% block head_stylesheet %}
+<link rel="stylesheet" href="{% static 'tougdo/tougdo.css' %}">
+{{ block.super }}
+{% endblock %}
 
 {% block body %}
   <body>
@@ -10,7 +15,7 @@
     <table>
         {% for item in object_list %}
         <tr>
-            <td>
+            <td class="priority{{ item.priority.number }}">
                 <a class="title" href="{% url "tougdo:item-update" item.id %}">
                 {{ item.title }}
                 </a>
