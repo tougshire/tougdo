@@ -35,5 +35,48 @@
       }
     });
     </script>
+  <script>
+    function adjustDate(days) {
+      due_date = new Date(inp_due_date.value)
+      due_date.setDate(due_date.getDate() + days)
+      inp_due_date.valueAsDate = due_date
+    }
+    inp_due_date = document.getElementById('{{ form.due_date.id_for_label }}')
+
+    btn_decrease_week = document.createElement('button')
+    btn_decrease_week.type="button"
+    btn_decrease_week.innerHTML = '<<'
+    inp_due_date.parentNode.insertBefore(btn_decrease_week, inp_due_date )
+
+    btn_decrease = document.createElement('button')
+    btn_decrease.type="button"
+    btn_decrease.innerHTML = '<'
+    inp_due_date.parentNode.insertBefore(btn_decrease, inp_due_date )
+
+    btn_increase_week = document.createElement('button')
+    btn_increase_week.type="button"
+    btn_increase_week.innerHTML = '>>'
+    inp_due_date.parentNode.insertBefore(btn_increase_week, inp_due_date.nextSibling.nextSibling )
+
+    btn_increase = document.createElement('button')
+    btn_increase.type="button"
+    btn_increase.innerHTML = '>'
+    inp_due_date.parentNode.insertBefore(btn_increase, inp_due_date.nextSibling.nextSibling )
+
+    btn_decrease_week.addEventListener('click', function() {
+      adjustDate(-7)
+    });
+    btn_decrease.addEventListener('click', function() {
+      adjustDate(-1)
+    });
+
+    btn_increase_week.addEventListener('click', function() {
+      adjustDate(7)
+    });
+    btn_increase.addEventListener('click', function() {
+      adjustDate(1)
+    });
+
+</script>
 
 {% endblock %}
