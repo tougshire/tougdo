@@ -21,7 +21,10 @@
                 </a>
             </td>
             <td>
-              {{ item.due_date}}
+              due: {{ item.due_date}}
+            </td>
+            <td>
+              Priority: {{ item.priority.label }}
             </td>
           </tr>
         {% empty %}

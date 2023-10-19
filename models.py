@@ -26,6 +26,14 @@ class Priority(models.Model):
     description = models.TextField(blank=True)
     number = models.IntegerField()
 
+    def __str__(self):
+        return f"{self.number}: {self.label}"
+
+    class Meta:
+        ordering = [
+            "number",
+        ]
+
 
 class Item(models.Model):
     title = models.CharField(max_length=100)
