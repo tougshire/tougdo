@@ -39,7 +39,7 @@ class Item(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateField(default=one_week_hence)
+    due_date = models.DateField(default=date.today)
     priority = models.ForeignKey(Priority, on_delete=models.SET_NULL, null=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     done_date = models.DateField("is done", blank=True, null=True)
