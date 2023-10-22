@@ -18,6 +18,42 @@
         {% include 'touglates/form_field.html' with field=checkbox label_tag="Done" %}
         {% endwith %}
       </div>
+      {{ taggeditems.management_form }}
+      {% for taggeditemform in taggeditems.forms %}
+        {% if taggeditemform.id.value > 0 %}
+          <div id="div_taggeditemform_{{ taggeditemform.id.value }}" class="taggeditemformsetform">
+            {% for hiddenfield in taggeditemform.hidden_fields %}
+            {{ hiddenfield }}
+            {% endfor %}
+            {% include 'touglates/form_field.html' with field=tag %}
+            {% include 'touglates/form_field.html' with field=taggeditemform.DELETE %}
+          </div>
+        {% else %}
+          <div class="taggeditemformsetform taggeditemnewform" style="display:none">
+            {% for hiddenfield in taggeditemform.hidden_fields %}
+            {{ hiddenfield }}
+            {% endfor %}
+            {% include 'touglates/form_field.html' with field=taggeditemform.tag %}
+            {% include 'touglates/form_field.html' with field=taggeditemform.DELETE %}
+          </div>
+        {% endif %}
+      {% endfor %}
+      <table>
+        {% for taggeditem in object.taggeditem_set.all %}
+        <tr id="tr_taggeditem_{{ taggeditem.id }}">
+          <td>
+            <button type="button" id="button_edittaggeditem_{{ taggeditem.id }}"
+              data-formid="div_taggeditemform_{{ taggeditem.id }}"
+              data-displayid="tr_taggeditem_{{ taggeditem.id }}"
+              class="taggeditem_edit_button">edit</button></td>
+          <td>{{ taggeditem.tag }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td><button type="button" id="button_addtaggeditem">Add Tag</button></td>
+          <td span="*"></td>
+        </tr>
+
 
       <input type="submit" value="Submit">
       {% if object.pk %}
@@ -35,5 +71,17 @@
       }
     });
     </script>
-
+  <script>
+    let taggeditemEditButtons = document.getElementsByClassName('taggeditem_edit_button')
+    for (taggeditemEditButton of taggeditemEditButtons) {
+      taggeditemEditButton.addEventListener('click', function (e) {
+        e.preventDefault()
+        enableFormsetForm(e.target.dataset.formid, e.target.dataset.displayid)
+      })
+    }
+    document.getElementById('button_addtaggeditem').addEventListener('click', function(e) {
+      e.preventDefault()
+      showNewFormsetForm('taggeditemnewform')
+    })
+  </script>
 {% endblock %}
