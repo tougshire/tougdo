@@ -1,5 +1,7 @@
+from typing import Any
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+
 
 from django.views.generic import (
     ListView,
@@ -9,7 +11,7 @@ from django.views.generic import (
     DeleteView,
 )
 from .models import Item, Tag
-from .forms import ItemForm
+from .forms import ItemForm, ItemTaggedItemFormSet
 
 
 class ItemCreate(LoginRequiredMixin, CreateView):
@@ -24,6 +26,15 @@ class ItemCreate(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse("tougdo:items")
+
+    def get_context_data(self, **kwargs: Any):
+        context_data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context_data["taggeditems"] = ItemTaggedItemFormSet(self.request.POST)
+        else:
+            context_data["taggeditems"] = ItemTaggedItemFormSet()
+
+        return context_data
 
 
 class ItemDetail(LoginRequiredMixin, DetailView):
