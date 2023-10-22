@@ -9,7 +9,10 @@ from tougdo.models import (
     Tag,
     TaggedItem,
 )
-from touglates.widgets import TouglateDateInput, TouglateDateTimeInput
+from touglates.widgets import (
+    TouglateDateInput,
+    TouglateRelatedSelect,
+)
 
 
 def validate_blank(value):
@@ -45,6 +48,11 @@ class TaggedItemForm(forms.ModelForm):
             "tag",
             "item",
         ]
+        widgets = {
+            "tag": TouglateRelatedSelect(
+                related_data={"model": "Tag", "add_url": reverse_lazy("tougdo:tag-add")}
+            )
+        }
 
 
 ItemTaggedItemFormSet = forms.inlineformset_factory(
