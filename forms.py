@@ -50,7 +50,11 @@ class TaggedItemForm(forms.ModelForm):
         ]
         widgets = {
             "tag": TouglateRelatedSelect(
-                related_data={"model": "Tag", "add_url": reverse_lazy("tougdo:tag-add")}
+                related_data={
+                    "model": "Tag",
+                    "add_url": reverse_lazy("tougdo:tag-popup-add"),
+                    "also_update": [],
+                }
             )
         }
 
