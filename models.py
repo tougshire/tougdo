@@ -10,15 +10,21 @@ def one_week_hence():
 
 
 class Tag(models.Model):
-    title = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField("slug")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    slug = models.SlugField("slug", blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "slug"], name="owner_slug_uniqueconstraint"
+            )
+        ]
 
     def get_absolute_url(self):
         return reverse("tougdo:tag", args=[self.id])
 
     def __str__(self):
-        return self.title
+        return self.slug
 
 
 class Priority(models.Model):
