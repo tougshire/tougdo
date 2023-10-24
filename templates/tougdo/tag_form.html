@@ -1,17 +1,14 @@
-{% extends "base.html" %}
+{% extends "base_form.html" %}
 
-{% block content %}
+{% block form_fields %}
 
-<h3>{{ title }}</h3>
-<div>
-    <div>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <input value="Save" type="submit">
-            <input value="Cancel" type="button" onclick="location.href='{% url "tougdo:items" %}';">
-        </form>
-    </div>
- </div>
+ <div>
+  {% include 'touglates/form_field.html' with field=form.slug %}
+</div>
+<input type="submit" value="Submit">
+{% if object.pk %}
+<button id="btn_delete" type="button" onclick="location.href='{% url "tougdo:item-delete" object.pk %}'">Delete</button>
+{% endif %}
+
 
 {% endblock %}
