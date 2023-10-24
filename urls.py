@@ -37,9 +37,14 @@ urlpatterns = [
         views.ItemUpdate.as_view(),
         name="item-update",
     ),
-    path("tag", views.TagList.as_view(), name="tags"),
-    path("tag/<int:tag_id>/", views.TagDetail.as_view(), name="tag"),
-    # CRUD patterns for tags
+    path("tags", views.TagList.as_view(), name="tags"),
+    path("tag/<int:pk>/", views.TagDetail.as_view(), name="tag"),
     path("tag/add/", views.TagCreate.as_view(), name="tag-add"),
+    path(
+        "tag/popup/add/",
+        views.TagCreate.as_view(),
+        name="tag-popup-add",
+        kwargs={"popup": True},
+    ),
     path("tag/<int:pk>/delete/", views.TagDelete.as_view(), name="tag-delete"),
 ]
