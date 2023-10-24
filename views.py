@@ -1,7 +1,9 @@
 from typing import Any
+from django.forms.models import BaseModelForm
+from django.http import HttpResponse
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-
+from django.utils.text import slugify
 
 from django.views.generic import (
     ListView,
@@ -84,16 +86,33 @@ class ItemDelete(LoginRequiredMixin, DeleteView):
 
 class TagCreate(LoginRequiredMixin, CreateView):
     model = Tag
-    fields = ["title"]
+    fields = ["slug"]
 
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["title"] = "Add a new list"
-        return context
+    def form_valid(self, form):
+        tag = form.save(commit=False)
+        tag.owner = self.request.user
+        tag.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        print("tp23an725", self.kwargs)
+        if "popup" in self.kwargs and self.kwargs.get("popup"):
+            print("tp23an723")
+            return reverse_lazy(
+                "touglates:popup_closer",
+                kwargs={
+                    "app_name": "tougdo",
+                    "model_name": "Tag",
+                    "pk": self.object.pk,
+                },
+            )
+        else:
+            return super().get_success_url()
 
 
 class TagUpdate(LoginRequiredMixin, UpdateView):
     model = Tag
+    fields = ["slug"]
 
 
 class TagDetail(LoginRequiredMixin, DeleteView):
