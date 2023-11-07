@@ -2,12 +2,15 @@
 {% load static %}
 {% block head_stylesheet %}
 <link rel="stylesheet" href="{% static 'tougdo/tougdo.css' %}">
+<link rel="stylesheet" href="{% static 'tougshire_vistas/tougshire_vistas.css' %}">
+
 {{ block.super }}
 {% endblock %}
 
 {% block body %}
   <body>
     {% block content %}
+    {% include 'tougshire_vistas/filter.html' %}
 
     {% if object_list %}
     <h3>Items</h3>

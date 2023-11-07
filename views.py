@@ -1,6 +1,7 @@
 from typing import Any
+from urllib.parse import urlencode
 from django.forms.models import BaseModelForm
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.utils.text import slugify
@@ -14,6 +15,12 @@ from django.views.generic import (
 )
 from .models import Item, Tag
 from .forms import ItemForm, ItemTaggedItemFormSet
+from tougshire_vistas.models import Vista
+from tougshire_vistas.views import (
+    get_vista_queryset,
+    make_vista_fields,
+    vista_context_data,
+)
 
 
 class ItemCreate(LoginRequiredMixin, CreateView):
@@ -47,21 +54,112 @@ class ItemList(LoginRequiredMixin, ListView):
     model = Item
     template_name = "tougdo/index.html"
 
+    def setup(self, request, *args, **kwargs):
+        self.vista_settings = {
+            "max_search_keys": 5,
+            "fields": [],
+        }
+
+        self.vista_settings["fields"] = make_vista_fields(
+            Item,
+            field_names=[
+                "title",
+                "description",
+                "priority",
+                "due_date",
+                "created_date",
+                "owner",
+                "done_date",
+            ],
+        )
+
+        self.vista_settings["fields"]["priority"]["operators"] = [
+            ("lte", "at most"),
+            ("exact", "is"),
+            ("gte", "at least"),
+        ]
+
+        if "by_value" in kwargs and "by_parameter" in kwargs:
+            self.vista_get_by = QueryDict(
+                urlencode(
+                    [
+                        ("filter__fieldname__0", [kwargs.get("by_parameter")]),
+                        ("filter__op__0", ["exact"]),
+                        ("filter__value__0", [kwargs.get("by_value")]),
+                        (
+                            "order_by",
+                            [
+                                "due_date",
+                                "priority",
+                            ],
+                        ),
+                        ("paginate_by", self.paginate_by),
+                    ],
+                    doseq=True,
+                )
+            )
+
+        self.vista_defaults = QueryDict(
+            urlencode(
+                [
+                    ("filter__fieldname__0", ["done_date"]),
+                    ("filter__op__0", ["exact"]),
+                    ("filter__value__0", None),
+                    (
+                        "order_by",
+                        [
+                            "due_date",
+                            "priority",
+                        ],
+                    ),
+                    ("paginate_by", self.paginate_by),
+                ],
+                doseq=True,
+            ),
+            mutable=True,
+        )
+
+        return super().setup(request, *args, **kwargs)
+
     def get_queryset(self):
-        filter_args = {"owner": self.request.user}
+        base_queryset = super().get_queryset()
 
-        if "tagslug" in self.kwargs and self.kwargs.get("tagslug") > "":
-            filter_args["tagslug"] = self.kwargs.get("tagslug")
-        if not ("all" in self.kwargs and self.kwargs.get("all")):
-            filter_args["done_date__isnull"] = True
+        self.vistaobj = {"querydict": QueryDict(), "queryset": base_queryset}
 
-        return Item.objects.filter(**filter_args)
+        vista_queryset = get_vista_queryset(self)
+        queryset = vista_queryset.filter(owner=self.request.user)
+        return queryset
+
+    def post(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_paginate_by(self, queryset):
+        if "paginate_by" in self.vistaobj["querydict"] and isinstance(
+            self.vistaobj["querydict"]["paginate_by"], int
+        ):
+            return self.vistaobj["querydict"]["paginate_by"]
+
+        return super().get_paginate_by(queryset)
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if "tag_id" in self.kwargs:
-            context["tag"] = Tag.objects.get(id=self.kwargs["tag_id"])
-        return context
+        context_data = super().get_context_data(**kwargs)
+
+        vista_data = vista_context_data(self.vista_settings, self.vistaobj["querydict"])
+
+        context_data = {**context_data, **vista_data}
+        context_data["vista_default"] = dict(self.vista_defaults)
+
+        if self.request.user.is_authenticated:
+            context_data["vistas"] = Vista.objects.filter(
+                user=self.request.user, model_name="sdcpeople.Article"
+            ).all()  # for choosing saved vistas
+
+        if self.request.POST.get("vista_name"):
+            context_data["vista_name"] = self.request.POST.get("vista_name")
+
+        context_data["count"] = self.object_list.count()
+
+        return context_data
 
 
 class ItemUpdate(LoginRequiredMixin, UpdateView):
